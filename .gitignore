@@ -1,0 +1,8 @@
+.DS_Store
+*.asv
+*.m~
+*.autosave
+outputs/
+results/
+data/
+*.mat
