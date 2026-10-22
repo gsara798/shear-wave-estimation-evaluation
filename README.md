@@ -34,3 +34,33 @@ Per-ROI `mean`, `median`, `std`, `CV`, `IQR`, `p05`, `p95`, min/max, valid cover
 Run `runtests('tests')` after adding `src` to the MATLAB path.
 
 Not yet a publication-level uncertainty-analysis tool. No model-specific fields required and no training/test data accessed.
+
+
+## Multi-frequency, multi-model ROI analysis
+
+`swseval.analyzeSweep` applies a **single fixed ROI definition** to all
+available REQ-ML predictions with layout
+`estimates/<run>/REQ-ML/<model>/<frequency>Hz/M<M>/reqml_result.mat`.
+Physical ROI coordinates in millimeters are recommended for comparisons
+across maps with different spatial sampling.
+
+```matlab
+cd('/Users/sara/local/shear-wave-estimation-evaluation')
+addpath(fullfile(pwd,'src'))
+root="/Users/sara/local/experimental-data-reorganized/2026-02-19/2026Feb19_inc_sp/estimates/lowpass_1ms";
+rois=[
+ swseval.roi.rectangle("ROI1",Center=[18 24],Size=[7 7],Units="mm")
+ swseval.roi.rectangle("ROI2",Center=[18 10],Size=[7 7],Units="mm")
+];
+T=swseval.analyzeSweep(rois,EstimatesRoot=root, ...
+ Models=["candidate","candidate10"],Frequencies=[300 400 500 600], ...
+ MValues=[2 3],SWSColorLimits=[1 4],ContinueOnMissing=true);
+```
+
+Outputs are written to `<EstimatesRoot>/evaluation/roi_analysis`:
+`roi_statistics_all.csv`, `roi_sweep.mat`, per-file ROI-overlay maps,
+and SWS-versus-frequency figures for each model/M. Curves show ROI median
+with spatial P5–P95 bars; **these are not confidence intervals** because
+neighboring windows are spatially correlated. Missing files are reported,
+not silently filled in. To generate just tables without overlay maps,
+use `ExportMaps=false`.
