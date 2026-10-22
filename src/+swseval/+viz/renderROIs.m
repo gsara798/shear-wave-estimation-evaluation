@@ -7,6 +7,7 @@ arguments
  options.SWSColorLimits (1,:) double=[]
  options.Formats (1,:) string=["png","pdf","tiff"]
  options.ShowTitles (1,1) logical=false
+ options.ColorbarDecimals (1,1) double {mustBeInteger,mustBeNonnegative}=1
 end
 map=swseval.io.validateMap(map);theme=swseval.viz.figureTheme();
 fig=figure('Visible','off','Color','w','Position',[100 100 900 720]);
@@ -15,6 +16,8 @@ A=double(map.cs_map);A(~map.valid_mask)=NaN;
 imagesc(ax,map.x_mm,map.z_mm,A,'AlphaData',isfinite(A));
 set(ax,'YDir','normal');axis(ax,'image');hold(ax,'on');
 colormap(ax,swseval.viz.mapColormap());cb=colorbar(ax);ylabel(cb,'SWS (m/s)');
+cb.Ruler.TickLabelFormat=sprintf('%%.%df',options.ColorbarDecimals);
+cb.FontName=char(theme.font);
 if ~isempty(options.SWSColorLimits),clim(ax,options.SWSColorLimits);end
 for i=1:numel(rois)
  [~,e]=swseval.roi.mask(rois(i),map);
