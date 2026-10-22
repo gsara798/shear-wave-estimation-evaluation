@@ -59,8 +59,6 @@ T=swseval.analyzeSweep(rois,EstimatesRoot=root, ...
 
 Outputs are written to `<EstimatesRoot>/evaluation/roi_analysis`:
 `roi_statistics_all.csv`, `roi_sweep.mat`, per-file ROI-overlay maps,
-and SWS-versus-frequency figures for each model/M. Curves show ROI median
-with spatial P5–P95 bars; **these are not confidence intervals** because
-neighboring windows are spatially correlated. Missing files are reported,
+and SWS-versus-frequency figures for each model/M. Curves show ROI **mean +/- spatial standard deviation** (not confidence intervals; neighboring windows are correlated). The x-axis shows only requested frequencies and the y-axis uses two decimals by default. Set `FrequencyYLim=[1 4]` to enforce the same vertical scale across models, or `YDecimals=1` for one decimal. SWS map colorbars use one decimal. Figure titles are disabled by default. Summary files use `roi_mean_std_vs_frequency_<model>_M<M>`; map overlays use `sws_map_with_rois_<model>_M<M>_<frequency>Hz`. Missing files are reported,
 not silently filled in. To generate just tables without overlay maps,
 use `ExportMaps=false`.
