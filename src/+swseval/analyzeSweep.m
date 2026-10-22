@@ -39,6 +39,7 @@ for model=options.Models
     end
     error("swseval:MissingEstimate","Missing estimate %s",sample);
    end
+   freqLabel=sprintf("%gHz",f);
    map=swseval.io.loadReqmlResult(sample);
    if options.ExportMaps
     folder=fullfile(out,"maps",model,"M"+string(m),sprintf("%gHz",f));
