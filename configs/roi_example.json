@@ -1,0 +1,7 @@
+{
+  "coordinate_convention": "x-z",
+  "rois": [
+    {"name":"ROI1","shape":"rectangle","center":[18,24],"size":[7,7],"units":"mm"},
+    {"name":"ROI2","shape":"rectangle","center":[30,24],"size":[7,7],"units":"mm"}
+  ]
+}
