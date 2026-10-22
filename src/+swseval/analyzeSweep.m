@@ -11,6 +11,8 @@ arguments
  options.SWSColorLimits (1,:) double = []
  options.ContinueOnMissing (1,1) logical = false
  options.ExportMaps (1,1) logical = true
+ options.FrequencyYLim (1,:) double = []
+ options.YDecimals (1,1) double {mustBeInteger,mustBeNonnegative} = 2
 end
 assert(~isempty(rois)&&numel(unique(string({rois.name})))==numel(rois), ...
  'swseval:DuplicateROI','ROI names must be unique');
@@ -41,7 +43,8 @@ for model=options.Models
    if options.ExportMaps
     folder=fullfile(out,"maps",model,"M"+string(m),sprintf("%gHz",f));
     A=swseval.analyzeROIs(map,rois,OutputDir=folder, ...
-      SWSColorLimits=options.SWSColorLimits);
+      SWSColorLimits=options.SWSColorLimits, ...
+      FigureBaseName="sws_map_with_rois_"+model+"_M"+string(m)+"_"+freqLabel);
    else
     A=swseval.metrics.roiStatistics(map,rois);
    end
@@ -66,6 +69,8 @@ if ~isempty(missing)
  end
 end
 swseval.viz.plotROIFrequency(T, ...
- OutputDir=fullfile(out,"figures"));
+ OutputDir=fullfile(out,"figures"), ...
+ Frequencies=options.Frequencies,YLim=options.FrequencyYLim, ...
+ YDecimals=options.YDecimals);
 fprintf("ROI sweep saved in %s\n",out);
 end
