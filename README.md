@@ -62,3 +62,19 @@ Outputs are written to `<EstimatesRoot>/evaluation/roi_analysis`:
 and SWS-versus-frequency figures for each model/M. Curves show ROI **mean +/- spatial standard deviation** (not confidence intervals; neighboring windows are correlated). The x-axis shows only requested frequencies and the y-axis uses two decimals by default. Set `FrequencyYLim=[1 4]` to enforce the same vertical scale across models, or `YDecimals=1` for one decimal. SWS map colorbars use one decimal. Figure titles are disabled by default. Summary files use `roi_mean_std_vs_frequency_<model>_M<M>`; map overlays use `sws_map_with_rois_<model>_M<M>_<frequency>Hz`. Missing files are reported,
 not silently filled in. To generate just tables without overlay maps,
 use `ExportMaps=false`.
+
+
+### Combined M comparison
+
+By default, `swseval.analyzeSweep` also exports a **separate plot for each
+ROI and model**, overlaying every requested M with a legend (`M=1`,
+`M=1.5`, etc.). The y value is mean SWS; error bars are the within-ROI
+spatial standard deviation. M curves use the canonical paperTheme colors
+(blue, red, green, purple, teal, orange). The frequency ticks match
+`Frequencies`, the y limits follow `FrequencyYLim`, and no title is
+drawn. Outputs are named
+`figures/roi_mean_std_vs_frequency_by_M_<model>_<ROI>.{png,pdf,tiff}`.
+
+Use `PlotCombinedM=false` to disable these plots, or call
+`swseval.viz.plotROICombinedM(T,OutputDir="...",Frequencies=[300 400 500 600],MValues=[1 1.5 2 3],YLim=[1 4])`
+on an existing sweep table without reloading estimation files.
