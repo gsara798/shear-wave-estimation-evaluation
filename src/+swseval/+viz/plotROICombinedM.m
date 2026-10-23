@@ -48,7 +48,10 @@ for model=models'
    S=R(double(R.M)==m & ismember(double(R.frequency_hz),frequencies),:);
    if isempty(S),continue;end
    S=sortrows(S,"frequency_hz");
-   color=theme.roi_colors(mod(mi-1,size(theme.roi_colors,1))+1,:);
+   mColors=[theme.rgb.blue.main; theme.rgb.red.main; ...
+    theme.rgb.green.main; theme.rgb.orange.main; ...
+    theme.rgb.teal.main; theme.rgb.purple.main];
+   color=mColors(mod(mi-1,size(mColors,1))+1,:);
    label="M="+string(m);
    if options.ShowErrorBars
     errorbar(ax,double(S.frequency_hz),double(S.mean_sws), ...
