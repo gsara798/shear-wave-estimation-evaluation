@@ -78,3 +78,16 @@ drawn. Outputs are named
 Use `PlotCombinedM=false` to disable these plots, or call
 `swseval.viz.plotROICombinedM(T,OutputDir="...",Frequencies=[300 400 500 600],MValues=[1 1.5 2 3],YLim=[1 4])`
 on an existing sweep table without reloading estimation files.
+
+
+### ROI geometry in CSV outputs
+
+Both `roi_statistics.csv` and `roi_statistics_all.csv` include the ROI
+`center_x`, `center_z`, `width`, `height`, and requested
+`xmin`, `xmax`, `zmin`, `zmax` coordinates in the input `units`
+(`mm` or `pixel`). Columns `selected_xmin_mm`,
+`selected_xmax_mm`, `selected_zmin_mm`, and `selected_zmax_mm`
+record the physical extent of the **actual selected pixel centers** in the
+output map. These can differ slightly from the requested boundaries because
+of discrete spatial sampling. All selected-extents are NaN if the ROI
+selects zero pixels.
