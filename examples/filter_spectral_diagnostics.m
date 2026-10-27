@@ -78,7 +78,7 @@ for ei=1:numel(experiments)
    imagesc(ax,S{j}.kx,S{j}.kz,log10(P+1e-12));
    axis(ax,"image");set(ax,"YDir","normal");xlabel(ax,"k_x/k_0");ylabel(ax,"k_z/k_0");
    title(ax,labels(j),"FontWeight","normal");
-   colormap(ax,parula(256));cb=colorbar(ax);ylabel(cb,"log_{10} normalized energy");
+   colormap(ax,swseval.viz.mapColormap(256));cb=colorbar(ax);ylabel(cb,"log_{10} normalized energy");
   end
   base=fullfile(out,sprintf("spectrum2d_%gHz",f));
   swseval.viz.exportFigure(fig,base,["png","pdf"]);close(fig);
