@@ -75,6 +75,61 @@ For the minimum shear wavelength, λ=1.8/600=3 mm, giving
 numerical convergence). 3-D resources and k-Wave time-step count must
 also be checked. A fixed REQ M changes the patch size in meters as f changes.
 
+## 0.5-mm feasibility pilot (November 3, 2026)
+
+The computationally expensive frozen `study_config.json` **continues
+to specify 0.2 mm** for any later resolution/convergence comparison.
+To test the opposed-disk physics sooner, the configuration generator and
+single-case runner now accept `GridSpacingM=0.0005`, with **no alteration
+of the 0.2-mm configs**.
+
+| Quantity | 0.5-mm pilot | 0.2-mm reference |
+| --- | --- | --- |
+| Computation | 141 × 49 × 129 = 891,261 nodes | 351 × 121 × 321 = 13,633,191 nodes |
+| Observation FOV | 50 × 50 mm | 50 × 50 mm |
+| Observation pixels | approx. 101 × 101 | approx. 251 × 251 |
+| Source disk radius | 3 mm | 3 mm |
+| Sparse source-node spacing | 3 cells = 1.5 mm | 8 cells = 1.6 mm |
+| Source velocity direction | x | x |
+| Material and frequency for pilot | 1.8 m/s, 500 Hz | 1.8 m/s, 500 Hz |
+| Computation box | 70 × 24 × 64 mm | 70 × 24 × 64 mm |
+
+The **0.5-mm outputs cannot overwrite 0.2-mm results**. They are kept under:
+
+```text
+<original-output-root>/
+  resolution_pilots/
+    dx0p5mm/
+      configs/homo_cs180_f500.json
+      runs/homo_cs180_f500/run.mat
+```
+
+After **interrupting and confirming the 0.2-mm k-Wave job has stopped**,
+run from MATLAB:
+
+```matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+addpath(fullfile(pwd,"studies","reqml_frequency_bias_kwave"))
+clear prepare_homogeneous_pilot run_one_homogeneous_case
+rehash
+
+% Preview 0.5-mm grid and output paths without launching the solver.
+T=prepare_homogeneous_pilot(GridSpacingM=0.0005);
+
+% Launch just ONE 0.5-mm case, once machine resources are confirmed.
+pilot=run_one_homogeneous_case(GridSpacingM=0.0005, ...
+    CaseID="homo_cs180_f500", ...
+    Execute=true,ResourcesReviewed=true);
+```
+
+This is a **feasibility test**, not a converged reference. At 1.8 m/s
+and 500 Hz, the shear wavelength is 3.6 mm, giving 7.2 grid points
+per shear wavelength at 0.5 mm; at 600 Hz it would be 6 points per
+wavelength. Verify solver accuracy/convergence before using the
+0.5-mm outputs as quantitative truth. In particular, assess the P/S
+components of the observed axial field before interpreting REQ-ML bias.
+The actual solver time has not been measured here.
+
 ## Study phases and stopping criteria
 
 ### 0. ROI matching — no simulations
