@@ -47,13 +47,15 @@
       0
     ],
     "phase_offset_rad": 0,
-    "source_plane_inset_m": 0.002
+    "source_plane_inset_m": 0.002,
+    "source_node_spacing_points": 8
   },
   "notes": [
     "Observation xz 5x5 cm is not computational domain x/y/z",
     "Custom opposed_x_disks runner imposes x velocity, which prominently excites longitudinal P waves",
     "For M=2, REQ patch physical size changes with f; compare at common physical support",
     "Bilayer phase not runnable by this homogeneous custom runner until 3D heterogeneous extension is validated",
-    "Check resource preflight before any 0.2mm 3D simulation"
+    "Check resource preflight before any 0.2mm 3D simulation",
+    "The source's original 3-node spacing at 0.5mm corresponds to 1.5mm physical spacing; at 0.2mm use 8 nodes (~1.6mm) to preserve approximate physical source sampling"
   ]
 }
