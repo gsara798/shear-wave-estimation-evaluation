@@ -55,7 +55,7 @@ coordinate y). The experimental ultrasound measures **axial displacement**.
 | Estimated solver grid | **351 x 121 x 321** | **13.63 million** 3-D nodes |
 | Material SWS | 1.8 and 3.0 m/s | Deliberately nondispersive, not fitted reference |
 | Frequencies | 300, 400, 500, 600 Hz | Full experimental sampling |
-| Sources | Two 3 mm radius sparse x-normal disks | x velocity; phase offset 0 |
+| Sources | Two 3 mm radius sparse x-normal disks | x velocity; phase offset 0 |\n| Source-node spacing | 8 grid points = 1.6 mm | Approximate the 1.5 mm source-node spacing in the 0.5 mm example |
 | Density / cp | 1000 kg/m³ / reduced cp=10cs | Computational approximation; not tissue cp |
 | Loss | No material attenuation, no tracking noise | Establish clean control |
 | REQ analysis | M=2; StepPixels=2 | Same as SP experiment |
