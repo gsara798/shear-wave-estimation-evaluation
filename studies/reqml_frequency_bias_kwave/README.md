@@ -184,6 +184,30 @@ which pstdElastic3D
 % Do not call run_opposed_x_disks_3d until resource preflight has passed.
 ```
 
+## Configuration resume and existing JSONs
+
+`prepare_homogeneous_pilot(WriteConfigs=true)` is idempotent for
+configuration files that contain the same physical values. It now compares
+JSON *canonically*, because order of keys in a JSON object has no semantic
+meaning, but `isequaln` on MATLAB structs can reject a reordered key
+sequence. Any **true difference in values** still raises
+`FreqBias:ConfigChanged` and preserves the original file. The runner also
+checks `ResourcesReviewed` **before** causing file-writing side effects
+when `Execute=true`.
+
+If you already wrote the eight files, simply rerun:
+
+```matlab
+clear prepare_homogeneous_pilot run_one_homogeneous_case
+rehash
+T=prepare_homogeneous_pilot(WriteConfigs=true);
+pilot=run_one_homogeneous_case(); % read-only; does not execute k-Wave
+```
+
+Do not manually delete or overwrite the generated JSONs. A valid
+`WriteConfigs=true` pass does **not** imply the heavy 3-D solver has
+sufficient resources.
+
 ## Optional single-run and sample-export helpers
 
 A guarded single-case runner exists and does not launch the solver unless
