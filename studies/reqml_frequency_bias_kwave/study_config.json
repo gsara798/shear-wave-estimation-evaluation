@@ -1,0 +1,59 @@
+{
+  "study_id": "reqml_frequency_bias_kwave_v1",
+  "purpose": "Test whether frequency-dependent SWS estimates arise in lossless nondispersive 3D k-Wave opposed-disk experiments",
+  "framework_checkout": "develop/v2",
+  "template_relative_path": "examples/kwave/3d/opposed_x_disks/config.json",
+  "runner": "run_opposed_x_disks_3d",
+  "observation": {
+    "fov_size_m_xz": [
+      0.05,
+      0.05
+    ],
+    "dx_m": 0.0002,
+    "dz_m": 0.0002,
+    "M": 2,
+    "step_pixels": 2
+  },
+  "compute_domain": {
+    "domain_size_m_xyz": [
+      0.07,
+      0.024,
+      0.064
+    ],
+    "grid_spacing_m": 0.0002,
+    "isotropic_runner": true
+  },
+  "homogeneous": {
+    "cs_m_s": [
+      1.8,
+      3
+    ],
+    "frequencies_hz": [
+      300,
+      400,
+      500,
+      600
+    ],
+    "rho_kg_m3": 1000,
+    "mechanical_dispersion": false,
+    "attenuation_enabled": false
+  },
+  "source": {
+    "type": "two_sparse_disks_opposed_x",
+    "disk_radius_m": 0.003,
+    "force_or_velocity_direction_xyz": [
+      1,
+      0,
+      0
+    ],
+    "phase_offset_rad": 0,
+    "source_plane_inset_m": 0.002
+  },
+  "notes": [
+    "Observation xz 5x5 cm is not computational domain x/y/z",
+    "Custom opposed_x_disks runner imposes x velocity, which prominently excites longitudinal P waves",
+    "For M=2, REQ patch physical size changes with f; compare at common physical support",
+    "Bilayer phase not runnable by this homogeneous custom runner until 3D heterogeneous extension is validated",
+    "Check resource preflight before any 0.2mm 3D simulation"
+  ]
+}
