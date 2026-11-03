@@ -184,6 +184,40 @@ which pstdElastic3D
 % Do not call run_opposed_x_disks_3d until resource preflight has passed.
 ```
 
+## Optional single-run and sample-export helpers
+
+A guarded single-case runner exists and does not launch the solver unless
+both flags are explicitly true. It avoids ever accidentally running the
+entire 8-condition 3D grid:
+
+```matlab
+% This is read-only. Default control is cs=1.8 m/s, 500 Hz:
+pilot=run_one_homogeneous_case();
+
+% ONLY after reviewing expected 3D RAM and runtime:
+% pilot=run_one_homogeneous_case( ...
+%     Execute=true,ResourcesReviewed=true);
+
+% After a validated solver run.mat exists:
+% s=export_opposed_disk_sample(pilot.run_file, ...
+%     Component="axial_total",ApplyFixedDonut=false);
+% s=export_opposed_disk_sample(pilot.run_file, ...
+%     Component="axial_shear",ApplyFixedDonut=true);
+```
+
+`export_opposed_disk_sample.m` saves standardized 2D observation samples
+while retaining the exact homogeneous material truth. It reports the axial
+shear-component squared-amplitude fraction of the two P/S split fields,
+and flags weak axial shear. This is a **diagnostic ratio**, not an
+independent proof of a pure shear measurement or full 3D modal energy.
+The original `run.mat` remains untouched.
+
+The converter's `Component="axial_total"` most closely matches a
+physical axial-displacement measurement; `axial_shear` is a
+diagnostic separation and must not be silently substituted for measured
+`U_z`. Material truth here describes *input shear speed*, not
+the phase speed of any compressional component in a mixed measurement.
+
 **Not yet verified in MATLAB**. The custom `develop/v2` source is a
 different API from the standard `main` bilayer configuration; do not
 mix them as if they were interchangeable.
