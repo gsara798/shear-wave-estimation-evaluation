@@ -91,3 +91,7 @@ record the physical extent of the **actual selected pixel centers** in the
 output map. These can differ slightly from the requested boundaries because
 of discrete spatial sampling. All selected-extents are NaN if the ROI
 selects zero pixels.
+
+## Reproducible experimental studies
+
+- [REQ-ML SP phantom comparison (M=2)](studies/reqml_sp_comparison/README.md): reproducible 5-arm comparison (raw/filtered reduced16, filtered-v2, candidate10, candidate) across the February 2026 `*_sp` acquisitions. Study scripts orchestrate EWP IQ processing, REQ-ML inference, and SWS-Eval ROI/figure analysis while preserving the original per-experiment outputs and resumable checkpoints. Study-specific code is deliberately outside `src/+swseval`.
