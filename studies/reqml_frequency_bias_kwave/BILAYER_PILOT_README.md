@@ -114,8 +114,8 @@ All runs have independent output directories and already-verified
 completed runs are skipped. They are stored under:
 
 ```text
-<original-output-root>/resolution_pilots/dx0p5mm/bilayer/
-  interface_z_plus0p0mm/
+studies/reqml_frequency_bias_kwave/bilayer/outputs/
+  resolution_pilots/dx0p5mm/interface_z_plus0p0mm/
     configs/bilayer_soft180_hard300_f300.json
     ...
     runs/bilayer_soft180_hard300_f300/run.mat
@@ -147,3 +147,30 @@ reference; test resolution convergence before claiming systematic SWS bias.
 
 No MATLAB solver or MATLAB unit test has been run in the preparation
 environment; execute the above tests on the local checkouts before k-Wave.
+
+
+## Output locations (both campaigns)
+
+The default `OutputRoot` is now relative to this study's source folder,
+not to `experimental-data-reorganized`. Resolution-specific subfolders
+and the existing no-overwrite checks are preserved:
+
+```text
+studies/reqml_frequency_bias_kwave/
+  homogeneous/outputs/
+    resolution_pilots/dx0p5mm/configs/
+    resolution_pilots/dx0p5mm/runs/
+  bilayer/outputs/
+    resolution_pilots/dx0p5mm/interface_z_plus0p0mm/configs/
+    resolution_pilots/dx0p5mm/interface_z_plus0p0mm/runs/
+```
+
+For 0.2 mm, files are under each campaign's `outputs/` directly (plus the
+bilayer interface-location subfolder). The repository `.gitignore` already
+excludes directories named `outputs/` and `*.mat`.
+
+These new defaults affect **future executions after updating the local
+code**. Previously generated results in `experimental-data-reorganized`
+are not moved or deleted. An explicit `OutputRoot` still overrides the
+default; bilayer's `HomogeneousOutputRoot` allows cloning source configs
+from a separately specified homogeneous output directory.
