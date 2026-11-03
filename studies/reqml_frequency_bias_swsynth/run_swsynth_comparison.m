@@ -37,8 +37,8 @@ if options.Stage=="plan"
     out=T;
     disp(T(:,["case_id","series","frequency_hz", ...
         "simulation_done","filtered_done"]));
-    fprintf("Plan: %d cases x %d arms = %d predictions (read-only).\n", ...
-        height(T),numel(C.Arms),height(T)*numel(C.Arms));
+    fprintf("Plan: %d cases x %d arms = %d predictions, M=%g, StepPixels=%d (read-only).\n", ...
+        height(T),numel(C.Arms),height(T)*numel(C.Arms),C.M,C.StepPixels);
     return
 end
 if options.Stage=="analyze" || options.Stage=="plot"
@@ -84,7 +84,7 @@ for i=1:height(T)
                 assert(isfile(source),"SynthCompare:FilterFirst", ...
                     "Run Stage=filter first: %s",source);
             end
-            destination=estimateFile(C,T(i,:),C.Arms(a));
+            destination=swsynth_comparison_estimate_file(C,T(i,:),C.Arms(a));
             makeEstimate(C,source,modelFiles(a),models{a}, ...
                 destination,C.Arms(a),caseID,options.UseParallel);
             completed=completed+1;
@@ -117,12 +117,6 @@ end
 
 function source=filteredFile(C,id)
 source=fullfile(C.outputRoot,"filtered",id,"wavefield_sample.mat");
-end
-
-function dest=estimateFile(C,row,arm)
-dest=fullfile(C.outputRoot,"estimates",row.series(1), ...
-    "REQ-ML",arm,sprintf("%gHz",row.frequency_hz(1)), ...
-    "M"+string(C.M),"reqml_result.mat");
 end
 
 function createFiltered(C,source,destID)
@@ -197,10 +191,28 @@ identity=struct("arm",char(arm),"case_id",char(caseID), ...
 comparison_identity=string(jsonencode(identity)); %#ok<NASGU>
 if isfile(dest)
     saved=load(dest,"comparison_identity");
-    assert(isfield(saved,"comparison_identity") && ...
-        string(saved.comparison_identity)==comparison_identity, ...
-        "SynthCompare:EstimateStale", ...
-        "Model/input/settings changed for existing estimate: %s",dest);
+    assert(isfield(saved,"comparison_identity"), ...
+        "SynthCompare:EstimateIdentityMissing", ...
+        "Existing estimate has no comparison_identity; preserving %s",dest);
+    if string(saved.comparison_identity)~=comparison_identity
+        changed=strings(0,1);
+        try
+            previous=jsondecode(char(string(saved.comparison_identity)));
+            keys=string(fieldnames(identity));
+            for j=1:numel(keys)
+                key=keys(j);
+                if ~isfield(previous,key) || ...
+                        ~isequaln(previous.(key),identity.(key))
+                    changed(end+1,1)=key; %#ok<AGROW>
+                end
+            end
+        catch
+            changed="unreadable_previous_identity";
+        end
+        error("SynthCompare:EstimateStale", ...
+            "Existing estimate differs in: %s. Preserving %s", ...
+            strjoin(changed,", "),dest);
+    end
     fprintf("  %s: resumed\n",arm);
     return
 end
