@@ -4,13 +4,16 @@ function T=prepare_homogeneous_pilot(options)
 % examples/kwave/3d/opposed_x_disks/config.json (not public run_simulation).
 %
 % T=prepare_homogeneous_pilot(); % read-only plan
-% T=prepare_homogeneous_pilot(WriteConfigs=true); % write 8 JSONs
+% T=prepare_homogeneous_pilot(WriteConfigs=true); % 0.2-mm reference configs
+% T=prepare_homogeneous_pilot(GridSpacingM=0.0005,WriteConfigs=true);
+% % Writes a separate 0.5-mm resolution-pilot set.
 arguments
     options.SimulationRoot (1,1) string = ...
         "/Users/sara/local/shear-wave-simulation-framework"
     options.OutputRoot (1,1) string = ...
         "/Users/sara/local/experimental-data-reorganized/2026-02-27/_simulation_studies/reqml_frequency_bias_kwave_v1"
     options.WriteConfigs (1,1) logical = false
+    options.GridSpacingM (1,1) double {mustBePositive} = 0.0002
 end
 here=string(fileparts(mfilename("fullpath")));
 plan=jsondecode(fileread(fullfile(here,"study_config.json")));
@@ -27,11 +30,22 @@ obs=plan.observation;
 g=plan.compute_domain;
 velocities=double(plan.homogeneous.cs_m_s(:).');
 freqs=double(plan.homogeneous.frequencies_hz(:).');
-spacing=double(g.grid_spacing_m);
+spacing=double(options.GridSpacingM);
+baseSpacing=double(g.grid_spacing_m);
+% Keep the original 0.2-mm protocol immutable while allowing a separate
+% 0.5-mm, fast feasibility test. No outputs/configs are ever overwritten.
+assert(abs(spacing-baseSpacing)<1e-12 || abs(spacing-0.0005)<1e-12, ...
+    "FreqBias:UnsupportedResolution", ...
+    "Only the frozen 0.2-mm design and 0.5-mm feasibility pilot are supported.");
+if abs(spacing-baseSpacing)<1e-12
+    outputRoot=options.OutputRoot;
+else
+    outputRoot=fullfile(options.OutputRoot,"resolution_pilots","dx0p5mm");
+end
 dims=double(g.domain_size_m_xyz(:).');
 fov=double(obs.fov_size_m_xz(:).');
-assert(abs(spacing-double(obs.dx_m))<1e-12 && ...
-    abs(spacing-double(obs.dz_m))<1e-12 && ...
+assert(abs(baseSpacing-double(obs.dx_m))<1e-12 && ...
+    abs(baseSpacing-double(obs.dz_m))<1e-12 && ...
     all(dims([1 3])>=fov+0.010), ...
     "FreqBias:Geometry","Requested observation/FOV or spacing inconsistent.");
 N=max(32,round(dims/spacing)+1);
@@ -41,11 +55,13 @@ npoints=prod(N);
 lowBoundGiB=npoints*4*32/1024^3;
 fprintf("\n3D computational grid: [%d %d %d], %.3f mm\n", ...
     N(1),N(2),N(3),spacing*1e3);
-fprintf("Observation FOV: %.1f x %.1f mm; %g grid points\n", ...
-    fov(1)*1e3,fov(2)*1e3,npoints);
+fprintf("Observation FOV: %.1f x %.1f mm; estimated %d x %d observation pixels\n", ...
+    fov(1)*1e3,fov(2)*1e3,round(fov(1)/spacing)+1, ...
+    round(fov(2)/spacing)+1);
+fprintf("Grid points in 3D solver: %g. Output root: %s\n",npoints,outputRoot);
 fprintf("Memory indicative: %.2f GiB for merely 32 single grid arrays; NOT full peak RAM.\n", ...
     lowBoundGiB);
-fprintf("Warning: 3D time-domain at 0.2 mm may need very large RAM/time.\n");
+fprintf("Warning: 3D time-domain at %.1f mm can require substantial RAM/time.\n",spacing*1e3);
 ids=strings(0,1);
 csValues=zeros(0,1);fValues=zeros(0,1);
 configs=strings(0,1);runfiles=strings(0,1);
@@ -53,8 +69,8 @@ existed=false(0,1);
 for cs=velocities
     for f=freqs
         id=sprintf("homo_cs%03d_f%03d",round(cs*100),round(f));
-        configFile=fullfile(options.OutputRoot,"configs",id+".json");
-        runDir=fullfile(options.OutputRoot,"runs",id);
+        configFile=fullfile(outputRoot,"configs",id+".json");
+        runDir=fullfile(outputRoot,"runs",id);
         caseCfg=base;
         caseCfg.cs_m_s=cs;
         caseCfg.frequency_hz=f;
@@ -66,8 +82,10 @@ for cs=velocities
         caseCfg.overwrite=false;
         caseCfg.source_relative_phase_rad=double(plan.source.phase_offset_rad);
         caseCfg.disk_radius_m=double(plan.source.disk_radius_m);
-        caseCfg.source_node_spacing_points= ...
-            double(plan.source.source_node_spacing_points);
+        % Preserve ~1.6 mm physical spacing of sparse source nodes
+        % rather than using 8 grid cells at 0.5 mm (=4 mm).
+        caseCfg.source_node_spacing_points=max(1,round( ...
+            double(plan.source.source_node_spacing_points)*baseSpacing/spacing));
         caseCfg.source_plane_inset_m=double(plan.source.source_plane_inset_m);
         assert(isequal(caseCfg.source_polarization_xyz(:).',[1 0 0]));
         rendered=string(jsonencode(caseCfg,PrettyPrint=true));
