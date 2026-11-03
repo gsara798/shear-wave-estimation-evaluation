@@ -13,6 +13,12 @@ arguments
     options.Execute (1,1) logical = false
     options.ResourcesReviewed (1,1) logical = false
 end
+% Never write even a config file before the explicit 3-D resource gate.
+if options.Execute
+    assert(options.ResourcesReviewed,"FreqBias:ResourceGate", ...
+        "3D 0.2 mm simulations are large. Inspect RAM/runtime first; " + ...
+        "then explicitly set ResourcesReviewed=true.");
+end
 T=prepare_homogeneous_pilot(SimulationRoot=options.SimulationRoot, ...
     OutputRoot=options.OutputRoot, ...
     WriteConfigs=options.Execute);
@@ -27,9 +33,7 @@ if ~options.Execute
     fprintf("Preview only: call Execute=true,ResourcesReviewed=true AFTER solver preflight.\n");
     return
 end
-assert(options.ResourcesReviewed,"FreqBias:ResourceGate", ...
-    "3D 0.2mm simulations are large. Inspect RAM/runtime first; " + ...
-    "then explicitly set ResourcesReviewed=true.");
+
 if T.completed(match)
     saved=load(T.run_file(match),"result");
     assert(isfield(saved,"result") && ...
