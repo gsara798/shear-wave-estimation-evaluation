@@ -184,6 +184,24 @@ which pstdElastic3D
 % Do not call run_opposed_x_disks_3d until resource preflight has passed.
 ```
 
+## Updated framework dependency (develop/v2, 2026-11-03)
+
+The custom opposed-disks runner has been corrected in
+`shear-wave-simulation-framework` `develop/v2`:
+- k-Wave 1.4.1 `DataCast` and other legacy parameter values use MATLAB
+  character vectors rather than `string` scalar values.
+- The solver records the 251×251 observed central plane instead of all
+  351×321 central-plane points, reducing the memory reserved for retained
+  P/S time series without changing the physical solver domain or FOV.
+- `setup_simulation_framework(KWavePath=...)` now adds the external toolbox
+  root to the MATLAB function path when configured.
+- Runtime logging prints a lower-bound size for four recorded P/S time-series
+  arrays; total peak memory can be substantially larger.
+
+Update **the develop/v2 simulation checkout**, not just this SWS-Eval
+repository, before re-running the solver. MATLAB execution of the modified
+3D solver has not yet been verified.
+
 ## Configuration resume and existing JSONs
 
 `prepare_homogeneous_pilot(WriteConfigs=true)` is idempotent for
