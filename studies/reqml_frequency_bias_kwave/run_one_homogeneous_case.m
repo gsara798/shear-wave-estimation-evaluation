@@ -11,8 +11,7 @@ arguments
     options.CaseID (1,1) string = "homo_cs180_f500"
     options.SimulationRoot (1,1) string = ...
         "/Users/sara/local/shear-wave-simulation-framework"
-    options.OutputRoot (1,1) string = ...
-        "/Users/sara/local/experimental-data-reorganized/2026-02-27/_simulation_studies/reqml_frequency_bias_kwave_v1"
+    options.OutputRoot (1,1) string = ""
     options.Execute (1,1) logical = false
     options.ResourcesReviewed (1,1) logical = false
     options.GridSpacingM (1,1) double {mustBePositive} = 0.0002

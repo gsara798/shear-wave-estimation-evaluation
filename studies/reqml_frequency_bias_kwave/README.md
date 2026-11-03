@@ -97,11 +97,10 @@ of the 0.2-mm configs**.
 The **0.5-mm outputs cannot overwrite 0.2-mm results**. They are kept under:
 
 ```text
-<original-output-root>/
-  resolution_pilots/
-    dx0p5mm/
-      configs/homo_cs180_f500.json
-      runs/homo_cs180_f500/run.mat
+studies/reqml_frequency_bias_kwave/homogeneous/
+  outputs/resolution_pilots/dx0p5mm/
+    configs/homo_cs180_f500.json
+    runs/homo_cs180_f500/run.mat
 ```
 
 After **interrupting and confirming the 0.2-mm k-Wave job has stopped**,
@@ -215,8 +214,12 @@ changing the frozen training/validation split.
 `study_config.json` freezes the intended physics and sampling.
 `prepare_homogeneous_pilot.m` reads the *actual* develop/v2 custom
 example and prepares per-condition JSONs, writing only when asked.
-Solver outputs go **outside Git** under:
-`experimental-data-reorganized/2026-02-27/_simulation_studies/reqml_frequency_bias_kwave_v1/`.
+Solver outputs now live in **ignored** campaign-specific folders under
+`studies/reqml_frequency_bias_kwave/homogeneous/outputs/` and
+`studies/reqml_frequency_bias_kwave/bilayer/outputs/` (see the bilayer
+protocol). These locations are inside the Git working tree but excluded by
+`.gitignore`; previous results under `experimental-data-reorganized`
+are not moved or deleted.
 
 ```matlab
 cd("/Users/sara/local/shear-wave-estimation-evaluation")
@@ -318,3 +321,30 @@ the phase speed of any compressional component in a mixed measurement.
 **Not yet verified in MATLAB**. The custom `develop/v2` source is a
 different API from the standard `main` bilayer configuration; do not
 mix them as if they were interchangeable.
+
+
+## Bilayer extension (prepared, not simulated)
+
+The **same opposed x-driven disks** can now be used for a controlled
+nondispersive z-bilayer (soft 1.8 m/s, hard 3.0 m/s) at 300–600 Hz.
+Both repositories have matching feature branches. Configuration-only
+preflight, guarded single-run instructions, source-identity regression
+tests, separate 0.5-mm outputs and per-pixel truth export are documented
+in [BILAYER_PILOT_README.md](BILAYER_PILOT_README.md).
+
+The z=0 mm interface is a provisional simulation control, not a
+measurement of the experimental phantom's layer boundary. The bilayer
+runner has not been validated by a MATLAB solver execution. Do not
+change simulation code branches while homogeneous parfor jobs are active.
+
+
+## Output-root change (November 3, 2026)
+
+Both campaigns default to dedicated ignored `outputs/` directories
+relative to this study. Homogeneous 0.2-mm/reference configs are under
+`homogeneous/outputs/configs/`; its 0.5-mm pilot is under
+`homogeneous/outputs/resolution_pilots/dx0p5mm/`.
+Bilayer results analogously use `bilayer/outputs/` with separate
+resolution and interface-position folders. The original external
+`experimental-data-reorganized` outputs remain untouched.
+Do not change source branches while MATLAB parallel workers are running.
