@@ -50,6 +50,12 @@ for i=1:numel(C.Arms)
 end
 C.Inputs=C.AllInputs(indices);
 C.ModelPaths=modelPaths(indices);
+C.analysisRoot=fullfile(C.outputRoot,"analysis");
+if ~isequal(C.Arms,C.AllArms) || C.M~=2 || C.StepPixels~=2
+    tag="M"+string(C.M)+"_step"+string(C.StepPixels)+ ...
+        "_"+strjoin(C.Arms,"_");
+    C.analysisRoot=fullfile(C.analysisRoot,"alternatives",tag);
+end
 C.Cases=prepare_swsynth_frequency_study( ...
     OutputRoot=C.simulationOutputRoot,WriteConfigs=false);
 C.Cases.series=regexprep(C.Cases.case_id,"_f[0-9]+$","");
