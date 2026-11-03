@@ -6,7 +6,7 @@ arguments
     options.MakeMontages (1,1) logical = true
     options.SavePDF (1,1) logical = false
 end
-summaryFile=fullfile(C.outputRoot,"analysis","all_cases_roi_statistics.csv");
+summaryFile=fullfile(C.analysisRoot,"all_cases_roi_statistics.csv");
 assert(isfile(summaryFile),"SynthCompare:PlotsNeedAnalysis", ...
     "Run Stage=analyze before plotting.");
 T=readtable(summaryFile,TextType="string", ...
@@ -21,7 +21,7 @@ assert(isequal(unique(string(T.model),"stable"),C.Arms') || ...
     "SynthCompare:ArmsDiffer", ...
     "Analysis model arms differ; rerun Stage=analyze for this selection.");
 colors=lines(numel(C.Arms));
-root=fullfile(C.outputRoot,"analysis","comparison_figures");
+root=fullfile(C.analysisRoot,"comparison_figures");
 if ~isfolder(root),mkdir(root);end
 files=strings(0,1);
 series=unique(string(T.series),"stable");
