@@ -101,7 +101,7 @@ for i=1:height(T)
 end
 assert(n>0,"SynthCompare:NoStatistics","No ROI values evaluated.");
 summary=vertcat(rows{1:n});
-root=fullfile(C.outputRoot,"analysis");
+root=C.analysisRoot;
 if ~isfolder(root),mkdir(root);end
 summaryFile=fullfile(root,"all_cases_roi_statistics.csv");
 writetable(summary,summaryFile);
