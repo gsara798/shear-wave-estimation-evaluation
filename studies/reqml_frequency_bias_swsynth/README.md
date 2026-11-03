@@ -187,7 +187,7 @@ Files stay inside this study's ignored outputs folder:
 outputs/comparison/
   filtered/<case_id>/wavefield_sample.mat
   filtered/<case_id>/filter_manifest.mat
-  estimates/<series>/REQ-ML/<arm>/<frequency>Hz/M2/reqml_result.mat
+  estimates/<series>/REQ-ML/<arm>/<frequency>Hz/M2/step<N>/reqml_result.mat
   analysis/all_cases_roi_statistics.csv
   analysis/frequency_shifts_300_600.csv
   analysis/comparison_figures/*.png
