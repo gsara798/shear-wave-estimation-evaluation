@@ -318,3 +318,18 @@ the phase speed of any compressional component in a mixed measurement.
 **Not yet verified in MATLAB**. The custom `develop/v2` source is a
 different API from the standard `main` bilayer configuration; do not
 mix them as if they were interchangeable.
+
+
+## Bilayer extension (prepared, not simulated)
+
+The **same opposed x-driven disks** can now be used for a controlled
+nondispersive z-bilayer (soft 1.8 m/s, hard 3.0 m/s) at 300–600 Hz.
+Both repositories have matching feature branches. Configuration-only
+preflight, guarded single-run instructions, source-identity regression
+tests, separate 0.5-mm outputs and per-pixel truth export are documented
+in [BILAYER_PILOT_README.md](BILAYER_PILOT_README.md).
+
+The z=0 mm interface is a provisional simulation control, not a
+measurement of the experimental phantom's layer boundary. The bilayer
+runner has not been validated by a MATLAB solver execution. Do not
+change simulation code branches while homogeneous parfor jobs are active.
