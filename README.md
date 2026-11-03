@@ -95,3 +95,5 @@ selects zero pixels.
 ## Reproducible experimental studies
 
 - [REQ-ML SP phantom comparison (M=2)](studies/reqml_sp_comparison/README.md): reproducible 5-arm comparison (raw/filtered reduced16, filtered-v2, candidate10, candidate) across the February 2026 `*_sp` acquisitions. Study scripts orchestrate EWP IQ processing, REQ-ML inference, and SWS-Eval ROI/figure analysis while preserving the original per-experiment outputs and resumable checkpoints. Study-specific code is deliberately outside `src/+swseval`.
+
+- [REQ-ML frequency-dependent bias in 3D k-Wave](studies/reqml_frequency_bias_kwave/README.md): planned controlled homogeneous and bilayer simulations using facing x-driven disks, 50×50 mm observation FOV and 0.2 mm x/z sampling. Includes safe preflight, per-run configuration generation, gated single-run execution and an explicit custom-run-to-wavefield-sample converter. No completed 3-D simulations yet; the bilayer + opposed-source combination still needs validated solver support.
