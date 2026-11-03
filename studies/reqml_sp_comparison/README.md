@@ -90,7 +90,7 @@ and run identifiers are unchanged from the earlier controller:
 The new code preserves the original per-sample, per-model fingerprint and
 resume checks. **If any pre-existing output has a different recorded
 signature, the study will stop instead of silently mixing versions.**
-Check interrupted `.partial.mat` files before reuse.
+For the filtered-v2 model bundle, a leftover `.partial.mat` from an interrupted write is now automatically **validated against the frozen fitted checkpoint** (model ID, complete required fields, predictor order, source signature/size/date, filter parameters, and sample predictions). Only if valid is it atomically promoted to `model_bundle.mat`; invalid partials remain untouched with an explicit diagnostic. Interrupted prediction outputs still require inspection before reuse.
 
 Filtered-v2 deployment is packaged from the *existing trained checkpoint*
 into `req-ml/models/reduced16_filtered_v2/model_bundle.mat`, without
