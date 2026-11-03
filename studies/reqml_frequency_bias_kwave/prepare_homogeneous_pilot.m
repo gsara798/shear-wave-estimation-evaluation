@@ -66,6 +66,8 @@ for cs=velocities
         caseCfg.overwrite=false;
         caseCfg.source_relative_phase_rad=double(plan.source.phase_offset_rad);
         caseCfg.disk_radius_m=double(plan.source.disk_radius_m);
+        caseCfg.source_node_spacing_points= ...
+            double(plan.source.source_node_spacing_points);
         caseCfg.source_plane_inset_m=double(plan.source.source_plane_inset_m);
         assert(isequal(caseCfg.source_polarization_xyz(:).',[1 0 0]));
         rendered=string(jsonencode(caseCfg,PrettyPrint=true));
