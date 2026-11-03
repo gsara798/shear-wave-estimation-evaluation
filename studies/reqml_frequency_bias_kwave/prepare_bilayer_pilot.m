@@ -6,13 +6,19 @@ function T=prepare_bilayer_pilot(options)
 arguments
     options.SimulationRoot (1,1) string = ...
         "/Users/sara/local/shear-wave-simulation-framework"
-    options.OutputRoot (1,1) string = ...
-        "/Users/sara/local/experimental-data-reorganized/2026-02-27/_simulation_studies/reqml_frequency_bias_kwave_v1"
+    options.OutputRoot (1,1) string = ""
+    options.HomogeneousOutputRoot (1,1) string = ""
     options.GridSpacingM (1,1) double {mustBePositive} = 0.0005
     options.InterfaceZM (1,1) double {mustBeFinite} = 0
     options.WriteConfigs (1,1) logical = false
 end
 here=string(fileparts(mfilename("fullpath")));
+if options.OutputRoot==""
+    options.OutputRoot=fullfile(here,"bilayer","outputs");
+end
+if options.HomogeneousOutputRoot==""
+    options.HomogeneousOutputRoot=fullfile(here,"homogeneous","outputs");
+end
 plan=jsondecode(fileread(fullfile(here,"study_config.json")));
 assert(isfield(plan,"bilayer"),"FreqBias:BilayerPlanMissing", ...
     "study_config.json must contain the frozen bilayer parameters.");
@@ -30,7 +36,7 @@ assert(abs(options.InterfaceZM)<fovZ/2-0.005, ...
 % This call is read-only unless WriteConfigs is explicitly true. The
 % homogeneous builder defines the exact source policy for both studies.
 H=prepare_homogeneous_pilot( ...
-    SimulationRoot=options.SimulationRoot,OutputRoot=options.OutputRoot, ...
+    SimulationRoot=options.SimulationRoot,OutputRoot=options.HomogeneousOutputRoot, ...
     GridSpacingM=options.GridSpacingM,WriteConfigs=options.WriteConfigs);
 if abs(options.GridSpacingM-0.0005)<1e-12
     resolutionFolder=fullfile(options.OutputRoot,"resolution_pilots","dx0p5mm");
@@ -43,7 +49,7 @@ end
 if options.InterfaceZM>=0,signLabel="plus";else,signLabel="minus";end
 zifLabel="interface_z_"+signLabel+ ...
     replace(sprintf("%.1f",abs(options.InterfaceZM)*1e3),".","p")+"mm";
-root=fullfile(resolutionFolder,"bilayer",zifLabel);
+root=fullfile(resolutionFolder,zifLabel);
 ids=strings(numel(freqs),1);
 configFiles=strings(numel(freqs),1);
 runFiles=strings(numel(freqs),1);
