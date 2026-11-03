@@ -216,5 +216,31 @@ and mode conversion; spherical point forces are not finite-contact
 k-Wave actuation. Any frequency bias here is conditional on this
 synthetic observation model.
 
+
+
+### Changing StepPixels without losing earlier estimates
+
+The inference results now have a step-aware output layout. Previous files
+saved at M2/reqml_result.mat are **not moved or overwritten**. They remain
+available when their recorded comparison identity contains the requested
+StepPixels. For a new step, predictions are saved under
+M2/step<N>/reqml_result.mat (e.g. M2/step1/reqml_result.mat).
+ROI summaries and figures from non-default steps are isolated under the
+corresponding analysis/alternatives/M2_step<N>_... folder.
+
+Explicitly pass StepPixels: omitting it still means **StepPixels=2**.
+
+~~~matlab
+% Example: change to StepPixels=1; adjust to your desired step.
+results=run_swsynth_comparison( ...
+    Stage="all",StepPixels=1,UseParallel=true);
+~~~
+
+The raw and filtered wavefields are independent of StepPixels and are
+reused. If a saved estimate for the *same* step differs in sample or model
+fingerprint, inference stops and reports the changed fields. Inspect
+that mismatch before deciding whether to create a separate comparison;
+do not delete the earlier estimate.
+
 **Execution status:** MATLAB tests, model inference and numeric comparisons
 remain to be run/verified on the user's Mac.
