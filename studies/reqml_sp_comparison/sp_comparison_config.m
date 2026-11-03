@@ -1,5 +1,5 @@
 function c=sp_comparison_config(options)
-%SP_COMPARISON_CONFIG Freeze the five-arm experimental SP comparison.
+%SP_COMPARISON_CONFIG Freeze the seven-arm experimental SP comparison.
 % Shared policy, independent of execution stage or local working directory.
 arguments
     options.DataRoot (1,1) string = ...
@@ -42,9 +42,16 @@ function c=comparisonConfig(o)
 c.comparisonName="reqml_sp_compare_m2_0p8_8_v1";
 c.rawRun="reqml_compare_raw_no_spatial_v1";
 c.filteredRun="reqml_compare_global_donut_0p8_8_v1";
+% Keep the original five arms in identical order so their saved results
+% retain the same identity; append only the two new filtered baselines.
 c.arms=["A_raw_v1","B_filtered_v1","C_filtered_v2", ...
-    "candidate10","candidate"];
-c.inputKinds=["raw","filtered","filtered","raw","raw"];
+    "candidate10","candidate", ...
+    "candidate10_filtered","candidate_filtered"];
+c.inputKinds=["raw","filtered","filtered","raw","raw", ...
+    "filtered","filtered"];
+assert(numel(c.arms)==numel(c.inputKinds) && ...
+    numel(unique(c.arms))==numel(c.arms), ...
+    "SPCompare:Arms","Each model arm must have one unique processing policy.");
 c.csMin=0.8;c.csMax=8;c.taper=0.06;
 c.v1=fullfile(o.ReqmlRoot,"models","reduced16","model_bundle.mat");
 c.v2Checkpoint=fullfile(o.ReqmlRoot,"training","q0_v5_clean_campaign", ...
