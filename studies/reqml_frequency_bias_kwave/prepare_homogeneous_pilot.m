@@ -10,12 +10,14 @@ function T=prepare_homogeneous_pilot(options)
 arguments
     options.SimulationRoot (1,1) string = ...
         "/Users/sara/local/shear-wave-simulation-framework"
-    options.OutputRoot (1,1) string = ...
-        "/Users/sara/local/experimental-data-reorganized/2026-02-27/_simulation_studies/reqml_frequency_bias_kwave_v1"
+    options.OutputRoot (1,1) string = ""
     options.WriteConfigs (1,1) logical = false
     options.GridSpacingM (1,1) double {mustBePositive} = 0.0002
 end
 here=string(fileparts(mfilename("fullpath")));
+if options.OutputRoot==""
+    options.OutputRoot=fullfile(here,"homogeneous","outputs");
+end
 plan=jsondecode(fileread(fullfile(here,"study_config.json")));
 template=fullfile(options.SimulationRoot, ...
     "examples","kwave","3d","opposed_x_disks","config.json");
