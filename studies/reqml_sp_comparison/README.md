@@ -21,22 +21,22 @@ These are physical (x,z) centers; confirm they cover the intended tissue.
 | C_filtered_v2 | Same filtered wavefield as B | new frozen reduced16-filtered v2 |
 | candidate10 | None | original candidate10 |
 | candidate | None | original candidate |
+| candidate10_filtered | Same global FFT donut as B/C | original candidate10 (no retraining) |
+| candidate_filtered | Same global FFT donut as B/C | original candidate (no retraining) |
 
 EWP runs **once** with no spatial filter. The already processed, isotropically
 sampled complex harmonic field is filtered using exactly the
 `q0v5.filter.applyFixedDonut` code from the training campaign; raw and
-filtered observations have the same grid and temporal processing. The old
-candidate models are run on the same unfiltered wavefields; this need not
-replicate their historical acquisition pipeline.
+filtered observations have the same grid and temporal processing. The historical candidate models are evaluated on **both** the same unfiltered and the same filtered wavefields. No legacy model is retrained. The raw paths need not reproduce the candidates' original historical processing pipeline.
 
 ## Organization
 
 - `sp_comparison_config.m` — one shared configuration (paths, models, runs,
   frozen ROI and frequency policy).
 - `run_processing.m` — EWP no-spatial-filter + derived 0.8–8 donut wavefields.
-- `run_estimation.m` — reuse the five fitted models, save estimates.
+- `run_estimation.m` — reuse the five fitted models across seven inference arms, save estimates.
 - `run_analysis.m` — call swseval.analyzeSweep; combine ROI tables.
-- `plot_model_comparison.m` — five-model maps and frequency/ROI figures.
+- `plot_model_comparison.m` — seven-arm maps and frequency/ROI figures.
 - `run_plots.m` — short entry point for just the visualizations.
 
 **Important:** none of these filenames should be copied back into REQ-ML
@@ -98,11 +98,58 @@ refitting. The baseline models are read-only. The historical candidate10
 directory must contain a unique valid `model_bundle.mat`; the script will
 not guess its training feature order or substitute another candidate.
 
+
+## Adding the two filtered historical candidates (2026-11-03)
+
+The original five arms (A/B/C/candidate10/candidate) finished for all three
+SP experiments. The following two arms were appended **without changing the
+name of the study, the existing output layout, model checkpoints, or EWP
+processing**:
+
+- `candidate10_filtered`: same candidate10 bundle as `candidate10`,
+  but input from `reqml_compare_global_donut_0p8_8_v1`.
+- `candidate_filtered`: same candidate bundle as `candidate`,
+  but input from the same filtered run.
+
+Only **24 new estimate files** should be calculated (2 new arms × 3
+experiments × 4 frequencies, M=2); older estimates are verified and skipped
+when `Resume=true`. Existing filtered wavefields are reused; do **not**
+call `run_processing()` again just for this extension.
+
+```matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+addpath(fullfile(pwd,"src"))
+addpath(fullfile(pwd,"studies","reqml_sp_comparison"))
+clear functions
+rehash
+
+run_estimation();       % resume five originals, compute only two new arms
+results=run_analysis(); % updated combined seven-arm ROI CSV and figures
+disp(results.summary)
+
+% Later: regenerate seven-arm figures without inference/ROI recomputation:
+run_plots();
+```
+
+New plots include seven-arm frequency-vs-SWS/CV panels, seven-map montages
+(files named `seven_model_SWS_maps_...`) and a new
+`candidate_filter_effect_roi_mean` figure with the paired
+filtered-minus-raw effect for both historical candidates. The A/B/C paired
+mean-SWS figure is retained.
+
+**Interpretation:** a smaller CV or change in ROI mean with filtering is
+not itself proof of more accurate shear-wave speed. Compare exact matching
+frequency/ROI, keep spatial SD distinct from confidence intervals, and
+do not treat candidate10 or candidate as being retrained on filtered
+features. All results remain descriptive unless independent experimental
+reference speeds are available.
+
 ## Evaluation and interpretation
 
 `swseval.analyzeSweep` writes per-experiment ROI statistics and maps and
 this study creates comparison panels of SWS means, spatial standard
-deviations, CV, five-model SWS maps and A/B/C changes in ROI mean. A lower
+deviations, CV, seven-arm SWS maps, A/B/C changes in ROI mean and the paired
+spatial-filter effects for candidate10 and candidate. A lower
 spatial CV does **not** establish accuracy, and ROI spatial std is **not**
 a confidence interval. No phantom ground-truth SWS is assumed.
 
