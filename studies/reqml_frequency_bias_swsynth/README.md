@@ -119,3 +119,98 @@ reported as separate controls, not pooled into one performance statistic.
 **Validation status:** scripts and tests prepared in GitHub; MATLAB
 unit tests, 20 dry runs, and actual wave synthesis remain to be verified
 on the user's computer.
+
+
+## ROI-based frozen-model comparison (after synthesis)
+
+This second stage reproduces the **seven experimental inference arms** in
+[reqml_sp_comparison](../reqml_sp_comparison/README.md) on the 20 synthetic
+wavefields. **No EWP/IQ processing, no model retraining, and no new
+swsynth/k-Wave simulation** occurs.
+
+- **REQ-ML:** M=2, StepPixels=2; raw and globally filtered versions of the
+  same input wavefield.
+- **FFT donut:** the identical Q0-v5 implementation, with csMin=0.8 m/s,
+  csMax=8 m/s and taper=0.06, applied to the full complex field.
+- **Arms:** A_raw_v1, B_filtered_v1, C_filtered_v2, candidate10,
+  candidate, candidate10_filtered, candidate_filtered. Frozen model bundles
+  must already exist under the same REQ-ML paths as the experiment study.
+- **Homogeneous ROI:** one center ROI at (x,z)=(25,25) mm, 10×10 mm.
+- **Bilayer ROIs:** soft (25,12.5) mm and hard (25,37.5) mm, 10×5 mm
+  each; both avoid the z=25 mm material interface.
+- **Metrics:** SWS-Eval descriptive statistics, on-model and
+  **common-valid-pixel** SWS, bias, MAE, MAPE, spatial SD/CV, median
+  predicted q and mean-SWS shift from 300 to 600 Hz. Truth is known
+  (homogeneous 1.8 or 3.0 m/s; bilayer soft 1.8/hard 3.0 m/s).
+
+The comparison is implemented in:
+- swsynth_comparison_config.m — seven arms, model sources, M/step, filter;
+- swsynth_comparison_rois.m — central/layer ROIs and physical reference;
+- run_swsynth_comparison.m — plan, filter, estimate, analyze, plot, all;
+- analyze_swsynth_comparison.m — shared-support ROI statistics and errors;
+- plot_swsynth_comparison.m — frequency panels and SWS map montages.
+
+### How to run (after simulations complete)
+
+~~~matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+addpath(fullfile(pwd,"src"))
+addpath(fullfile(pwd,"studies","reqml_frequency_bias_swsynth"))
+clear run_swsynth_comparison swsynth_comparison_config
+
+% No writes; inspect which of the 20 simulations have completed:
+plan=run_swsynth_comparison();
+
+% One-case pilot with the three primary arms:
+pilotCase="point_homo_cs180_f500";
+primary=["A_raw_v1","C_filtered_v2","candidate10_filtered"];
+run_swsynth_comparison(Stage="filter",CaseIDs=pilotCase);
+run_swsynth_comparison(Stage="estimate",CaseIDs=pilotCase, ...
+    Arms=primary,UseParallel=false);
+
+% All seven arms (20 x 7 = 140 predictions, then ROI analysis and plots):
+result=run_swsynth_comparison(Stage="all",UseParallel=false);
+
+% Analysis and plots can be regenerated without reinference:
+stats=run_swsynth_comparison(Stage="analyze");
+figures=run_swsynth_comparison(Stage="plot");
+~~~
+
+A shorter primary comparison across all 20 cases is available via
+Stage="all",Arms=primary (60 predictions). Run the separate analyze/plot
+stages using the **same arm selection**. Make sure that the existing
+REQ-ML reduced16-filtered-v2 deployment bundle is present first.
+
+Files stay inside this study's ignored outputs folder:
+
+~~~text
+outputs/comparison/
+  filtered/<case_id>/wavefield_sample.mat
+  filtered/<case_id>/filter_manifest.mat
+  estimates/<series>/REQ-ML/<arm>/<frequency>Hz/M2/reqml_result.mat
+  analysis/all_cases_roi_statistics.csv
+  analysis/frequency_shifts_300_600.csv
+  analysis/comparison_figures/*.png
+~~~
+
+Filtered samples and estimates are resumable with input/model fingerprint
+checks; they are not overwritten on a mismatch. During other k-Wave jobs,
+leave UseParallel=false.
+
+Unit test (configuration/ROIs/plan only, no inference):
+
+~~~matlab
+runtests("tests/test_reqml_swsynth_comparison_config.m")
+~~~
+
+**Interpretation:** all arms are compared on common valid patch centers
+**within each frequency**. Patch center grids can differ with frequency
+because of the wavelength-dependent window size; 300–600 Hz shifts are ROI
+summaries, not paired-pixel differences. Spatial SD is not a confidence
+interval. The nondispersive Eikonal bilayer excludes complete reflections
+and mode conversion; spherical point forces are not finite-contact
+k-Wave actuation. Any frequency bias here is conditional on this
+synthetic observation model.
+
+**Execution status:** MATLAB tests, model inference and numeric comparisons
+remain to be run/verified on the user's Mac.
