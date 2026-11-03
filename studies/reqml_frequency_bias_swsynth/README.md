@@ -193,6 +193,10 @@ outputs/comparison/
   analysis/comparison_figures/*.png
 ~~~
 
+Alternative model-arm selections (or M/step settings) write their separate
+ROI CSVs and figures under analysis/alternatives/<arm_set>/; they do not
+replace the default seven-arm analysis.
+
 Filtered samples and estimates are resumable with input/model fingerprint
 checks; they are not overwritten on a mismatch. During other k-Wave jobs,
 leave UseParallel=false.
