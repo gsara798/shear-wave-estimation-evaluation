@@ -57,5 +57,20 @@
     "Bilayer phase not runnable by this homogeneous custom runner until 3D heterogeneous extension is validated",
     "Check resource preflight before any 0.2mm 3D simulation",
     "The source's original 3-node spacing at 0.5mm corresponds to 1.5mm physical spacing; at 0.2mm use 8 nodes (~1.6mm) to preserve approximate physical source sampling"
-  ]
+  ],
+  "bilayer": {
+    "negative_z_cs_m_s": 1.8,
+    "positive_z_cs_m_s": 3,
+    "interface_z_m": 0,
+    "interface_position_matches_experiment": false,
+    "frequencies_hz": [
+      300,
+      400,
+      500,
+      600
+    ],
+    "actuation": "exact clone of homogeneous opposed_x_disks_3d configuration",
+    "attenuation_enabled": false,
+    "mechanical_dispersion": false
+  }
 }
