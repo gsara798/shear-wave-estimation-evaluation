@@ -76,8 +76,15 @@ for cs=velocities
             if ~isfolder(configDir),mkdir(configDir);end
             if isfile(configFile)
                 old=jsondecode(fileread(configFile));
-                assert(isequaln(old,caseCfg),"FreqBias:ConfigChanged", ...
-                    "Existing simulation config differs; preserving: %s",configFile);
+                % JSON objects have no field order; MATLAB structs do.
+                % Compare canonical JSON rather than isequaln on structs,
+                % which may fail after decoding an otherwise identical file.
+                oldCanonical=canonicalJson(old);
+                newCanonical=canonicalJson(caseCfg);
+                assert(strcmp(oldCanonical,newCanonical), ...
+                    "FreqBias:ConfigChanged", ...
+                    "Existing JSON has different parameter values; preserving: %s", ...
+                    configFile);
             else
                 fid=fopen(configFile,"w");
                 assert(fid>0,"FreqBias:ConfigWrite","Cannot write %s",configFile);
@@ -102,5 +109,40 @@ if ~options.WriteConfigs
     fprintf("Read-only preview. Use WriteConfigs=true to write JSON configs; no solver runs.\n");
 else
     fprintf("Homogeneous configs prepared. Pilot one case before full sweep.\n");
+end
+end
+
+function encoded=canonicalJson(value)
+% Canonicalize object field order recursively, preserving all parameter
+% values and JSON array ordering. Do not ignore physically relevant fields.
+if isstruct(value)
+    value=orderfields(value);
+    for idx=1:numel(value)
+        names=fieldnames(value);
+        for jj=1:numel(names)
+            key=names{jj};
+            value(idx).(key)=canonicalValue(value(idx).(key));
+        end
+    end
+end
+encoded=char(jsonencode(value));
+end
+
+function value=canonicalValue(value)
+if isstruct(value)
+    value=orderfields(value);
+    for idx=1:numel(value)
+        names=fieldnames(value);
+        for jj=1:numel(names)
+            key=names{jj};
+            value(idx).(key)=canonicalValue(value(idx).(key));
+        end
+    end
+elseif iscell(value)
+    for idx=1:numel(value)
+        value{idx}=canonicalValue(value{idx});
+    end
+elseif isstring(value)
+    value=char(value);
 end
 end
