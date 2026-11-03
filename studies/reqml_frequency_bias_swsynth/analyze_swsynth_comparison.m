@@ -13,9 +13,7 @@ for i=1:height(T)
     caseID=T.case_id(i);
     armMaps=cell(numel(C.Arms),1);
     for a=1:numel(C.Arms)
-        file=fullfile(C.outputRoot,"estimates",T.series(i), ...
-            "REQ-ML",C.Arms(a),sprintf("%gHz",T.frequency_hz(i)), ...
-            "M"+string(C.M),"reqml_result.mat");
+        file=swsynth_comparison_estimate_file(C,T(i,:),C.Arms(a));
         assert(isfile(file),"SynthCompare:EstimateMissing", ...
             "Missing inference for %s / %s: %s",caseID,C.Arms(a),file);
         armMaps{a}=swseval.io.loadReqmlResult(file);
