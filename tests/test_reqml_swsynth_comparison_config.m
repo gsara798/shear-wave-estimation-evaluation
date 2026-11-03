@@ -56,3 +56,33 @@ verifyTrue(testCase,all(ismember( ...
     ["simulation_done","filtered_done"], ...
     string(T.Properties.VariableNames))));
 end
+
+function testStepSpecificEstimatePaths(testCase)
+% Switching from an old StepPixels=2 file to a new step must preserve it.
+output=string(tempname);
+mkdir(output);
+cleanup=onCleanup(@()rmdir(output,"s")); %#ok<NASGU>
+C=swsynth_comparison_config(OutputRoot=output, ...
+    ReqmlRoot="/nonexistent/readonly");
+row=C.Cases(1,:);
+base=fullfile(output,"estimates",row.series(1), ...
+    "REQ-ML","A_raw_v1",sprintf("%gHz",row.frequency_hz(1)),"M2");
+legacy=fullfile(base,"reqml_result.mat");
+newDefault=swsynth_comparison_estimate_file(C,row,"A_raw_v1");
+verifyEqual(testCase,newDefault,fullfile(base,"step2","reqml_result.mat"));
+if ~isfolder(base),mkdir(base);end
+comparison_identity=string(jsonencode(struct( ...
+    "step_pixels",2,"M",2))); %#ok<NASGU>
+save(legacy,"comparison_identity");
+verifyEqual(testCase, ...
+    swsynth_comparison_estimate_file(C,row,"A_raw_v1"),legacy);
+C.StepPixels=1;
+verifyEqual(testCase, ...
+    swsynth_comparison_estimate_file(C,row,"A_raw_v1"), ...
+    fullfile(base,"step1","reqml_result.mat"));
+C.StepPixels=4;
+verifyEqual(testCase, ...
+    swsynth_comparison_estimate_file(C,row,"A_raw_v1"), ...
+    fullfile(base,"step4","reqml_result.mat"));
+verifyTrue(testCase,isfile(legacy));
+end
