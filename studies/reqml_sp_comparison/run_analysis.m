@@ -1,5 +1,5 @@
 function out=run_analysis(varargin)
-%RUN_ANALYSIS Evaluate the saved five-arm estimates with fixed ROI definitions.
+%RUN_ANALYSIS Evaluate the saved seven-arm estimates with fixed ROI definitions.
 % Does not run EWP, fit models, or recompute predictions.
 c=sp_comparison_config(varargin{:});
 T=analyzeAll(c,c);
