@@ -34,7 +34,7 @@ for i=1:height(T)
     verifyEqual(testCase,C.domain.Lz_m,0.05);
     verifyEqual(testCase,C.domain.dx_m,0.0002);
     verifyEqual(testCase,C.domain.dz_m,0.0002);
-    verifyEqual(testCase,C.geometry,"projected3d");
+    verifyEqual(testCase,string(C.geometry),"projected3d");
     verifyEqual(testCase,C.measurement.axis_xyz(:).',[0 0 1]);
 end
 % Running this builder again must be idempotent.
@@ -56,7 +56,7 @@ for f=[300 400 500 600]
     verifyEqual(testCase,A.incidence,B.incidence);
     verifyEqual(testCase,A.domain,B.domain);
     verifyEqual(testCase,A.harmonic,B.harmonic);
-    verifyEqual(testCase,B.propagation.phase_method,"eikonal");
+    verifyEqual(testCase,string(B.propagation.phase_method),"eikonal");
     g=swsynth.domain.buildGrid( ...
         struct("geometry","projected3d","Lx_m",0.05,"Lz_m",0.05, ...
         "dx_m",0.0002,"dz_m",0.0002,"observation_y_m",0));
