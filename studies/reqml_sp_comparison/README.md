@@ -311,3 +311,35 @@ Reduced14 minus Reduced16 (raw and filtered) and filtered minus raw
 Without independent phantom SWS ground truth, these are **comparisons of
 predicted SWS and spatial variation**, not experimental accuracy estimates.
 Spatial SD across an ROI is not a confidence interval.
+
+
+### Optional fifth model: candidate10 on the filtered wavefield
+
+The focused comparison also accepts one historical benchmark:
+`candidate10_filtered` (the frozen Candidate10 model on the **same
+global-donut-filtered input** as the other filtered arms). It is **not**
+the same architecture or training dataset as Reduced14/Reduced16, so
+interpret it as an external experimental comparator rather than part
+of the matched feature-ablation design.
+
+~~~matlab
+four=["A_raw_v1","reduced14", ...
+      "B_filtered_v1","reduced14_filtered"];
+five=[four,"candidate10_filtered"];
+
+% Uses existing saved estimates: no refitting or EWP reprocessing.
+result=run_analysis(Arms=five,MakeComparisonPlots=true);
+disp(result.summary)
+
+% Optional figure-only rerun:
+figures=run_plots(Arms=five);
+~~~
+
+The fifth arm is already included in the historical seven-arm study,
+so it usually needs no new estimation. The separate output
+`reqml_sp_compare_m2_0p8_8_v1_reduced14_5arms_v1`
+contains five-arm maps and frequency/ROI curves, retains the matched
+four-arm 2×2 contrasts, and adds
+`candidate10_filtered_vs_reduced_roi_mean` to compare Candidate10
+with Reduced14 and Reduced16 **under identical filtering**.
+The four-, seven-, and nine-arm analyses remain unchanged.
