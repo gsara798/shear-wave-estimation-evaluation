@@ -1,7 +1,7 @@
 function rois=sp_comparison_rois(experiment)
 %SP_COMPARISON_ROIS Fixed physical ROIs: one central homogeneous; two bilayer.
-% Homogeneous: central 16x14 mm. Bilayer: 14.2x2.4 mm ROIs, interior of layers.
-% Bilayer positions are centralized within each 300 Hz layer plateau;
+% Homogeneous: central 16x14 mm. Bilayer: 14.2x3.2 mm ROIs, interior of layers.
+% Bilayer z-ranges [11.4,14.6] and [22.4,25.6] mm avoid the interface;
 % actual pixel counts must be checked for each acquisition.
 % These physical coordinates are deliberately independent of the model arm.
 arguments
@@ -14,9 +14,9 @@ if contains(experiment,"_homo_")
         Center=[18 18],Size=[16 14],Units="mm");
 elseif contains(experiment,"_dl_")
     rois=[swseval.roi.rectangle("ROI1", ...
-            Center=[19 15],Size=[14.2 2.4],Units="mm"), ...
+            Center=[19 13],Size=[14.2 3.2],Units="mm"), ...
           swseval.roi.rectangle("ROI2", ...
-            Center=[19 22.5],Size=[14.2 2.4],Units="mm")];
+            Center=[19 24],Size=[14.2 3.2],Units="mm")];
 else
     error("SPCompare:ROIExperiment", ...
         "No ROI policy for experiment %s",experiment);

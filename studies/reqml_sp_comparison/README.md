@@ -432,3 +432,28 @@ mismatch in `plot_model_comparison` and the one-ROI tile-layout problem.
 The new output suffix is `_centered_bilayer_v4`. No new processing or
 REQ-ML prediction is required: rerun `run_analysis(Arms=five,
 MakeComparisonPlots=true)` after pulling the change.
+
+
+### Final interior bilayer ROIs (SP and RSWE)
+
+The current ROI definitions **supersede earlier ROI positions above**.
+They are intended to sample the flatter interiors of both layers, away
+from the interlayer transition visible in the 300/600 Hz SP maps:
+
+| ROI | Center [x,z] mm | Size [width,height] mm | Physical extent (mm) |
+| --- | --- | --- | --- |
+| ROI1 soft | [19,13] | [14.2,3.2] | x=11.9–26.1, z=11.4–14.6 |
+| ROI2 hard | [19,24] | [14.2,3.2] | x=11.9–26.1, z=22.4–25.6 |
+
+These ranges approximate the requested z=11–15 mm and z=22–26 mm
+while leaving some outer-map margin at 300 Hz. They are 3.2 mm tall,
+slightly shorter than those requested ranges to avoid sampling the
+very edge. For the approximate 0.4053 mm SP grid, about **35×8 = 280**
+selected centers per ROI are expected, **not guaranteed**. The existing
+assertion checks actual selected pixel counts across every frequency,
+model arm, and both ROIs; model-specific valid-mask counts are tracked
+separately. A new analysis suffix `_interior_bilayer_v5` preserves
+historical analysis outputs. The homogeneous central ROI stays unchanged.
+
+Run only `run_analysis(Arms=five,MakeComparisonPlots=true)` using frozen
+estimates; no new processing or REQ predictions are necessary.

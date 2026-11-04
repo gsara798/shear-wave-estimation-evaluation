@@ -153,3 +153,20 @@ without string-array dimension mismatches or an invalid two-panel
 layout. The RSWE analysis suffix is now `_centered_bilayer_v3`.
 Existing frozen estimates can be reused; rerun
 `rswe_run_analysis(MakeComparisonPlots=true)` after pulling the change.
+
+
+## Interior bilayer ROIs, matched to SP (latest)
+
+The current geometry **supersedes all earlier bilayer placements**:
+ROI1 (soft) center [19,13] mm, size [14.2,3.2] mm, extent
+x=11.9–26.1 mm, z=11.4–14.6 mm; ROI2 (hard) center [19,24] mm,
+size [14.2,3.2] mm, extent x=11.9–26.1 mm, z=22.4–25.6 mm.
+These ROIs move away from the interlayer boundary, leaving a small
+margin to the 300 Hz image extrema. RSWE pixel-grid support must still
+pass `assertEqualBilayerPixelCounts`; an SP-derived nominal count of
+~280 points/ROI is only an estimate, not RSWE validation.
+
+The homogeneous ROI remains centered at [18,18] mm with size
+[16,14] mm. RSWE analysis now uses the versioned suffix
+`_interior_bilayer_v4`, preserving older results. Re-run only
+`rswe_run_analysis(MakeComparisonPlots=true)` on saved predictions.
