@@ -1,5 +1,5 @@
 function output = plot_model_comparison(options)
-%PLOT_MODEL_COMPARISON Comparative experimental SWS plots for 7 Q0 conditions.
+%PLOT_MODEL_COMPARISON Comparative experimental SWS plots for 4, 5, 7, or 9 arms.
 %
 %   output=plot_model_comparison();
 %
@@ -9,8 +9,8 @@ function output = plot_model_comparison(options)
 %
 % Figures per SP experiment:
 %   - One frequency-dependence figure for each ROI: mean SWS +/- spatial
-%     SD and spatial CV, with ALL SEVEN arms on shared axes.
-%   - One seven-map SWS montage per frequency (fixed [1,4] m/s color range).
+%     SD and spatial CV, with selected arms on shared axes.
+%   - One SWS map montage per frequency (fixed [1,4] m/s color range).
 %   - ROI-mean differences B-A/C-B/C-A and filtered-minus-raw candidate contrasts.
 %
 % CAUTION: Within-ROI SD is spatial heterogeneity, NOT uncertainty of the
@@ -23,18 +23,47 @@ arguments
     options.Frequencies (1,:) double = [300 400 500 600]
     options.M (1,1) double {mustBePositive} = 2
     options.ComparisonName (1,1) string = "reqml_sp_compare_m2_0p8_8_v1"
+    options.AnalysisName (1,1) string = ""
+    options.Arms (1,:) string = ["A_raw_v1","B_filtered_v1", ...
+        "C_filtered_v2","candidate10","candidate", ...
+        "candidate10_filtered","candidate_filtered"]
     options.SWSColorLimits (1,2) double = [1 4]
     options.FrequencyYLimits (1,2) double = [1 4]
     options.SavePDF (1,1) logical = true
 end
-arms=["A_raw_v1","B_filtered_v1","C_filtered_v2", ...
+legacyArms=["A_raw_v1","B_filtered_v1","C_filtered_v2", ...
     "candidate10","candidate", ...
     "candidate10_filtered","candidate_filtered"];
-labels=["A | reduced16 raw", "B | reduced16 filtered", ...
+allArms=[legacyArms,"reduced14","reduced14_filtered"];
+allLabels=["A | reduced16 raw", "B | reduced16 filtered", ...
     "C | reduced16 filtered-v2", "candidate10 raw", "candidate raw", ...
-    "candidate10 filtered", "candidate filtered"];
+    "candidate10 filtered", "candidate filtered", ...
+    "reduced14 raw", "reduced14 filtered (transfer)"];
+arms=options.Arms;
+fourArms=["A_raw_v1","reduced14","B_filtered_v1","reduced14_filtered"];
+fiveArms=[fourArms,"candidate10_filtered"];
+isFocused=isequal(arms,fourArms) || isequal(arms,fiveArms);
+assert(isequal(arms,legacyArms) || isequal(arms,allArms) || isFocused, ...
+    "SPCompare:PlotsArms","Expect focused four/five or frozen seven/nine-arm comparison.");
+positions=zeros(1,numel(arms));
+for k=1:numel(arms)
+    positions(k)=find(allArms==arms(k),1);
+end
+labels=allLabels(positions);
+analysisName=options.AnalysisName;
+if analysisName=="",analysisName=options.ComparisonName;end
+armTag=string(numel(arms))+"arms";
+if numel(arms)==4
+    mapTag="four";
+elseif numel(arms)==5
+    mapTag="five";
+elseif numel(arms)==7
+    mapTag="seven";
+else
+    mapTag="nine";
+end
 C=lines(numel(arms));
-file=fullfile(options.DataRoot,options.ComparisonName, ...
+file=fullfile(options.DataRoot,analysisName, ...
     "all_experiments_roi_statistics.csv");
 assert(isfile(file),"SPCompare:PlotsInput", ...
     "ROI summary not found; run Stage=analyze first: %s",file);
@@ -55,10 +84,10 @@ for experiment=options.Experiments
     assert(~isempty(S),"SPCompare:PlotsEmpty", ...
         "No ROI results for %s",experiment);
     figDir=fullfile(options.DataRoot,experiment, ...
-        "analysis",options.ComparisonName,"comparison_figures");
+        "analysis",analysisName,"comparison_figures");
     if ~isfolder(figDir),mkdir(figDir);end
 
-    % One 2-panel frequency plot per ROI: compare seven arms at same ROI.
+    % One 2-panel frequency plot per ROI: same ROI for every arm.
     for rn=roiNames'
         fig=figure("Visible","off","Color","w", ...
             "Position",[80 80 1050 890]);
@@ -97,11 +126,14 @@ for experiment=options.Experiments
         legend(ax1,"Location","best","Interpreter","none");
         title(tl,experiment+" | "+rn+" | M="+string(options.M), ...
             "Interpreter","none");
-        base=fullfile(figDir,"frequency_comparison_7arms_"+rn+"_M"+string(options.M));
+        base=fullfile(figDir,"frequency_comparison_"+armTag+"_"+rn+ ...
+            "_M"+string(options.M));
         output=[output;export(fig,base,options.SavePDF)]; %#ok<AGROW>
         close(fig);
     end
 
+    % Historical A/B/C contrasts are defined only for the seven/nine-arm set.
+    if ~isFocused
     % Paired change in ROI mean (NO SWS accuracy claim without truth).
     fig=figure("Visible","off","Color","w", ...
         "Position",[80 80 1040 760]);
@@ -130,10 +162,11 @@ for experiment=options.Experiments
     output=[output;export(fig,fullfile(figDir,"paired_roi_mean_differences"), ...
         options.SavePDF)]; %#ok<AGROW>
     close(fig);
-
+    end
 
     % Additional paired contrasts: only the spatial filter changes for
     % each historical candidate. These are changes in SWS, not accuracy.
+    if ~isFocused
     fig=figure("Visible","off","Color","w", ...
         "Position",[80 80 1040 760]);
     tiled=tiledlayout(fig,2,1,"Padding","compact");
@@ -152,6 +185,14 @@ for experiment=options.Experiments
             double(newCandidate.mean_sws-oldCandidate.mean_sws),"-s", ...
             "LineWidth",1.6, ...
             "DisplayName","candidate: filtered - raw");
+        if numel(arms)==9
+            raw14=ordered(S,rn,"reduced14",options.Frequencies);
+            filtered14=ordered(S,rn,"reduced14_filtered",options.Frequencies);
+            plot(ax,options.Frequencies, ...
+                double(filtered14.mean_sws-raw14.mean_sws),"-^", ...
+                "LineWidth",1.6, ...
+                "DisplayName","reduced14: filtered - raw (transfer)");
+        end
         yline(ax,0,"k:");
         ylabel(ax,"Change in ROI mean SWS (m/s)");
         xlabel(ax,"Frequency (Hz)");
@@ -162,17 +203,103 @@ for experiment=options.Experiments
             legend(ax,"Location","best","Interpreter","none");
         end
     end
-    title(tiled,experiment+" | historical models: spatial-filter effect", ...
+    title(tiled,experiment+" | spatial-filter effect (same fitted models)", ...
         "Interpreter","none");
     output=[output;export(fig, ...
         fullfile(figDir,"candidate_filter_effect_roi_mean"), ...
         options.SavePDF)]; %#ok<AGROW>
     close(fig);
+    end
 
-    % Fixed physical color scale across all seven maps at each frequency.
+    % Controlled 2x2: same two frozen models, with and without filtering.
+    % All contrasts are paired ROI SWS changes, not errors against truth.
+    if isFocused
+        fig=figure("Visible","off","Color","w", ...
+            "Position",[80 80 1080 780]);
+        t=tiledlayout(fig,2,1,"Padding","compact", ...
+            "TileSpacing","compact");
+        for ri=1:numel(roiNames)
+            rn=roiNames(ri);
+            ax=nexttile(t);hold(ax,"on");
+            raw16=ordered(S,rn,"A_raw_v1",options.Frequencies);
+            raw14=ordered(S,rn,"reduced14",options.Frequencies);
+            filtered16=ordered(S,rn,"B_filtered_v1",options.Frequencies);
+            filtered14=ordered(S,rn,"reduced14_filtered",options.Frequencies);
+            plot(ax,options.Frequencies, ...
+                double(raw14.mean_sws-raw16.mean_sws),"-o", ...
+                "LineWidth",1.6, ...
+                "DisplayName","reduced14 - reduced16 | raw");
+            plot(ax,options.Frequencies, ...
+                double(filtered14.mean_sws-filtered16.mean_sws),"-s", ...
+                "LineWidth",1.6, ...
+                "DisplayName","reduced14 - reduced16 | filtered");
+            plot(ax,options.Frequencies, ...
+                double(filtered16.mean_sws-raw16.mean_sws),"-^", ...
+                "LineWidth",1.6, ...
+                "DisplayName","filtered - raw | reduced16");
+            plot(ax,options.Frequencies, ...
+                double(filtered14.mean_sws-raw14.mean_sws),"-d", ...
+                "LineWidth",1.6, ...
+                "DisplayName","filtered - raw | reduced14");
+            yline(ax,0,"k:");
+            ylabel(ax,"Change in ROI mean SWS (m/s)");
+            xlabel(ax,"Frequency (Hz)");
+            title(ax,rn,"Interpreter","none");
+            xticks(ax,options.Frequencies);
+            grid(ax,"on");
+            if ri==1
+                legend(ax,"Location","best","Interpreter","none");
+            end
+        end
+        title(t,experiment+" | feature ablation vs spatial filtering", ...
+            "Interpreter","none");
+        output=[output;export(fig, ...
+            fullfile(figDir,"feature_filter_2x2_roi_mean"), ...
+            options.SavePDF)]; %#ok<AGROW>
+        close(fig);
+    end
+
+    % Candidate10 is an external filtered-input benchmark, not part of
+    % the matched Reduced16/Reduced14 2x2 ablation.
+    if isequal(arms,fiveArms)
+        fig=figure("Visible","off","Color","w", ...
+            "Position",[80 80 1040 760]);
+        t=tiledlayout(fig,2,1,"Padding","compact");
+        for ri=1:numel(roiNames)
+            rn=roiNames(ri);
+            ax=nexttile(t);hold(ax,"on");
+            filtered16=ordered(S,rn,"B_filtered_v1",options.Frequencies);
+            filtered14=ordered(S,rn,"reduced14_filtered",options.Frequencies);
+            candidate=ordered(S,rn,"candidate10_filtered",options.Frequencies);
+            plot(ax,options.Frequencies, ...
+                double(candidate.mean_sws-filtered16.mean_sws),"-o", ...
+                "LineWidth",1.6, ...
+                "DisplayName","candidate10 - reduced16 | filtered");
+            plot(ax,options.Frequencies, ...
+                double(candidate.mean_sws-filtered14.mean_sws),"-s", ...
+                "LineWidth",1.6, ...
+                "DisplayName","candidate10 - reduced14 | filtered");
+            yline(ax,0,"k:");
+            ylabel(ax,"Change in ROI mean SWS (m/s)");
+            xlabel(ax,"Frequency (Hz)");
+            title(ax,rn,"Interpreter","none");
+            xticks(ax,options.Frequencies);grid(ax,"on");
+            if ri==1
+                legend(ax,"Location","best","Interpreter","none");
+            end
+        end
+        title(t,experiment+" | filtered-input candidate10 benchmark", ...
+            "Interpreter","none");
+        output=[output;export(fig, ...
+            fullfile(figDir,"candidate10_filtered_vs_reduced_roi_mean"), ...
+            options.SavePDF)]; %#ok<AGROW>
+        close(fig);
+    end
+
+    % Fixed physical color scale across all maps at each frequency.
     for f=options.Frequencies
         fig=figure("Visible","off","Color","w", ...
-            "Position",[30 100 2800 660]);
+            "Position",[30 100 320*numel(arms)+560 660]);
         tl=tiledlayout(fig,1,numel(arms),"TileSpacing","compact", ...
             "Padding","compact");
         for a=1:numel(arms)
@@ -213,7 +340,7 @@ for experiment=options.Experiments
         end
         title(tl,experiment+" | "+string(f)+" Hz | M="+string(options.M), ...
             "Interpreter","none");
-        base=fullfile(figDir,sprintf("seven_model_SWS_maps_%gHz_M%g",f,options.M));
+        base=fullfile(figDir,mapTag+sprintf("_model_SWS_maps_%gHz_M%g",f,options.M));
         output=[output;export(fig,base,options.SavePDF)]; %#ok<AGROW>
         close(fig);
     end

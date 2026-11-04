@@ -1,14 +1,20 @@
 function out=run_analysis(varargin)
-%RUN_ANALYSIS Evaluate the saved seven-arm estimates with fixed ROI definitions.
+%RUN_ANALYSIS Evaluate the supported frozen SP arms with fixed physical ROIs.
 % Does not run EWP, fit models, or recompute predictions.
 c=sp_comparison_config(varargin{:});
+assert(isequal(c.arms,c.legacyArms) || isequal(c.arms,c.allArms) || ...
+    isequal(c.arms,c.fourArms) || isequal(c.arms,c.fiveArms), ...
+    "SPCompare:AnalysisArms", ...
+    "Analyze frozen seven/nine or focused four/five-arm comparisons.");
 T=analyzeAll(c,c);
 out=struct("stage","analyze","summary",T,"arms",c.arms, ...
-    "comparison_name",c.comparisonName);
+    "comparison_name",c.comparisonName, ...
+    "analysis_name",c.analysisName);
 if c.MakeComparisonPlots
     plot_model_comparison(DataRoot=c.DataRoot, ...
         Experiments=c.Experiments,Frequencies=c.Frequencies, ...
-        M=c.M,ComparisonName=c.comparisonName);
+        M=c.M,ComparisonName=c.comparisonName, ...
+        AnalysisName=c.analysisName,Arms=c.arms);
 end
 end
 
@@ -24,7 +30,7 @@ for i=1:numel(o.Experiments)
     experiment=o.Experiments(i);
     root=fullfile(o.DataRoot,experiment);
     estimateRoot=fullfile(root,"estimates",c.comparisonName);
-    analysisRoot=fullfile(root,"analysis",c.comparisonName);
+    analysisRoot=fullfile(root,"analysis",c.analysisName);
     fprintf("\n=== ANALYZE %s ===\n",experiment);
     tab=swseval.analyzeSweep(rois, ...
         EstimatesRoot=estimateRoot,Models=c.arms, ...
@@ -42,7 +48,7 @@ for i=1:numel(o.Experiments)
     parts{i}=tab;
 end
 T=vertcat(parts{:});
-reportDir=fullfile(o.DataRoot,c.comparisonName);
+reportDir=fullfile(o.DataRoot,c.analysisName);
 if ~isfolder(reportDir),mkdir(reportDir);end
 writetable(T,fullfile(reportDir,"all_experiments_roi_statistics.csv"));
 fprintf("\nCombined ROI table saved: %s\n",reportDir);
