@@ -457,3 +457,21 @@ historical analysis outputs. The homogeneous central ROI stays unchanged.
 
 Run only `run_analysis(Arms=five,MakeComparisonPlots=true)` using frozen
 estimates; no new processing or REQ predictions are necessary.
+
+
+### Enlarged and centered homogeneous ROI (latest)
+
+For **both 5% and 10% homogeneous SP**, the old 16×14 mm ROI
+centered at [18,18] mm has been superseded by one fixed rectangle:
+
+- **Center [x,z] = [19,19.25] mm**.
+- **Size [width,height] = [17,15] mm** (area 255 mm² vs. 224 mm²).
+- Extent **x=10.5–27.5 mm, z=11.75–26.75 mm**.
+
+This centers the ROI on the common 300 Hz image extent visible in the
+10% SP map, leaving a modest border margin, and applies identically to
+5% SP. The same policy is shared by the RSWE experiment ROIs, but must
+be visually validated there. The current SP analysis-name suffix is
+`_interior_bilayer_v5_homo_centered_large_v2`. Bilayer ROIs remain
+unchanged from the immediately previous revision. Re-run analysis/plots
+only; frozen model estimates and processing are reused.

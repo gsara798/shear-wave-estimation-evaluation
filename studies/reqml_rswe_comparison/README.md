@@ -170,3 +170,15 @@ The homogeneous ROI remains centered at [18,18] mm with size
 [16,14] mm. RSWE analysis now uses the versioned suffix
 `_interior_bilayer_v4`, preserving older results. Re-run only
 `rswe_run_analysis(MakeComparisonPlots=true)` on saved predictions.
+
+
+## Homogeneous ROI centered and slightly enlarged (latest)
+
+Both **5% and 10% homogeneous RSWE** phantoms now use one ROI with
+center [19,19.25] mm, size [17,15] mm, physical extent x=10.5–27.5 mm,
+z=11.75–26.75 mm. This supersedes the old [18,18] mm / [16,14] mm
+central ROI and matches the latest SP policy. The placement was chosen
+from the 300 Hz 10% SP map, so inspect actual 5% and RSWE coverage before
+using final statistics. Bilayer ROIs are unchanged. The current RSWE
+analysis suffix is `_interior_bilayer_v4_homo_centered_large_v2`.
+Re-run analysis/plots only; existing frozen predictions are reused.

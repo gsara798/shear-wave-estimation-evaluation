@@ -18,8 +18,8 @@ for rois={sp,rswe}
     r=rois{1};
     verifyEqual(testCase,numel(r),1);
     verifyEqual(testCase,string(r.name),"central");
-    verifyEqual(testCase,r.center,[18 18]);
-    verifyEqual(testCase,r.size,[16 14]);
+    verifyEqual(testCase,r.center,[19 19.25]);
+    verifyEqual(testCase,r.size,[17 15]);
     verifyEqual(testCase,string(r.units),"mm");
 end
 end
@@ -44,7 +44,7 @@ c=sp_comparison_config(ReqmlRoot=repo,EwpRoot=repo,EvalRoot=repo, ...
         "reduced14_filtered","candidate10_filtered"]);
 verifyEqual(testCase,c.comparisonName,"reqml_sp_compare_m2_0p8_8_v1");
 verifyTrue(testCase,endsWith(c.analysisName, ...
-    "_reduced14_5arms_v1_interior_bilayer_v5"));
+    "_reduced14_5arms_v1_interior_bilayer_v5_homo_centered_large_v2"));
 verifyEqual(testCase,c.M,2);
 verifyEqual(testCase,c.StepPixels,2);
 end
@@ -67,7 +67,7 @@ verifyEqual(testCase,c.StepPixels,2);
 verifyEqual(testCase,c.Frequencies,[300 400 500 600]);
 verifyEqual(testCase,c.comparisonName,"reqml_rswe_compare_m2_0p8_8_v1");
 verifyTrue(testCase,endsWith(c.analysisName, ...
-    "_reduced14_5arms_v1_interior_bilayer_v4"));
+    "_reduced14_5arms_v1_interior_bilayer_v4_homo_centered_large_v2"));
 verifyNotEqual(testCase,c.comparisonName, ...
     "reqml_sp_compare_m2_0p8_8_v1");
 end

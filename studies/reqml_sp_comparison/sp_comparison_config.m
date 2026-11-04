@@ -80,7 +80,7 @@ if ~isequal(c.arms,c.legacyArms)
     end
 end
 % New ROI policy is versioned: retain earlier two-ROI analyses intact.
-c.analysisName=c.analysisName+"_interior_bilayer_v5";
+c.analysisName=c.analysisName+"_interior_bilayer_v5_homo_centered_large_v2";
 c.csMin=0.8;c.csMax=8;c.taper=0.06;
 c.v1=fullfile(o.ReqmlRoot,"models","reduced16","model_bundle.mat");
 c.v2Checkpoint=fullfile(o.ReqmlRoot,"training","q0_v5_clean_campaign", ...
