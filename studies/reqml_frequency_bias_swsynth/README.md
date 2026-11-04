@@ -244,3 +244,98 @@ do not delete the earlier estimate.
 
 **Execution status:** MATLAB tests, model inference and numeric comparisons
 remain to be run/verified on the user's Mac.
+
+## Exploratory Reduced14 frequency-transfer comparison
+
+The Q0-v5 **Reduced14** model removes `ecum_increment_entropy` and
+`srad_proxy_centroid_k_norm` from the frozen Reduced16 predictor set.
+It is **not** a replacement for the previously validated Reduced16 bundle.
+It has a separate train-only checkpoint from the 210-geometry validation
+protocol; the 45-geometry TEST set is **not** newly evaluated here.
+Its OOF SWS MAPE is slightly worse than All20, but the central question
+in this transfer experiment is whether the frequency-dependent SWS bias
+changes on **independently synthesized** homogeneous/bilayer fields.
+
+### 1. Export the existing Reduced14 checkpoint, without fitting
+
+Run from the `REQ-ML` checkout that contains the completed Reduced14
+validation models:
+
+~~~matlab
+cd("/Users/sara/local/req-ml")
+addpath(fullfile(pwd,"training","q0_v5_clean_campaign"),"-begin")
+clear export_q0_v5_reduced14_transfer
+preflight=export_q0_v5_reduced14_transfer(Mode="plan");
+bundle=export_q0_v5_reduced14_transfer(Mode="run");
+~~~
+
+This checks the frozen 210/45/45 split, ordered 14 predictors, saved
+training signature, fit identity, and a deterministic prediction
+roundtrip. It produces
+`training/q0_v5_clean_campaign/outputs/reduced14_transfer_bundle_v1/model_bundle.mat`.
+The exporter is resumable but refuses to overwrite a different bundle.
+Neither the original checkpoint nor `models/current` changes.
+
+### 2. Reuse the 20 existing simulations; infer Reduced14 only
+
+Run from the `shear-wave-estimation-evaluation` checkout containing
+the Reduced14 comparison arm. **Use the same `M` and `StepPixels`
+as the seven earlier model estimates.** Example for `M=2`,
+`StepPixels=5`:
+
+~~~matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+addpath(fullfile(pwd,"studies","reqml_frequency_bias_swsynth"),"-begin")
+clear run_swsynth_comparison swsynth_comparison_config
+
+% Read-only plan for the existing 20 wavefields.
+T=run_swsynth_comparison(Stage="plan",Arms="reduced14", ...
+    M=2,StepPixels=5);
+assert(all(T.simulation_done),"One or more simulation inputs are missing.");
+
+% Single-case inference pilot (uses the first existing case).
+pilot=run_swsynth_comparison(Stage="estimate", ...
+    CaseIDs=string(T.case_id(1)),Arms="reduced14", ...
+    M=2,StepPixels=5,UseParallel=false);
+
+% Finish only the 20 new Reduced14 predictions. Pilot output is resumed.
+newEstimates=run_swsynth_comparison(Stage="estimate", ...
+    Arms="reduced14",M=2,StepPixels=5,UseParallel=true);
+~~~
+
+`reduced14` uses the **raw, unfiltered** swsynth field, matching the
+training preprocessing; it never silently applies a donut filter.
+The original seven arm estimates, filters and simulations are untouched.
+
+### 3. Compare on identical ROIs / frequency series
+
+~~~matlab
+legacy=["A_raw_v1","B_filtered_v1","C_filtered_v2", ...
+    "candidate10","candidate","candidate10_filtered", ...
+    "candidate_filtered"];
+arms=[legacy,"reduced14"];
+
+roiStats=run_swsynth_comparison(Stage="analyze", ...
+    Arms=arms,M=2,StepPixels=5);
+figures=run_swsynth_comparison(Stage="plot", ...
+    Arms=arms,M=2,StepPixels=5);
+~~~
+
+The comparison uses the same homogeneous center ROI and bilayer
+soft/hard ROIs as above, at 300/400/500/600 Hz. Look at the
+`all_cases_roi_statistics.csv` and
+`frequency_shifts_300_600.csv` under the resulting
+`outputs/comparison/analysis/alternatives/M2_step5_.../` directory.
+Both ROIs in the bilayer must be reported separately. The figures
+include SWS mean ± spatial SD, MAPE, CV, median predicted q, and maps.
+The *per-frequency common-valid mask* now includes Reduced14, so
+existing seven-arm descriptive metrics may change slightly due to the
+common support even when their saved predictions are unchanged.
+
+**Important:** when any of the original seven arms are missing for the
+chosen step, compute those estimates at that same step before the
+eight-arm `analyze` stage. The estimator checks input/model fingerprints
+and refuses to replace mismatched results. No further wave simulations
+are needed. Any frequency trend is a model/geometry/analysis-window
+effect within a **nondispersive** synthetic material; this study does not
+prove physical gelatin dispersion or measure an oracle q in the bilayer.
