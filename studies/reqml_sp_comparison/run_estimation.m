@@ -1,10 +1,11 @@
 function out=run_estimation(varargin)
-%RUN_ESTIMATION Run/resume 7 frozen Q0 arms (5 unique fitted models) over processed SP wavefields.
+%RUN_ESTIMATION Run/resume frozen baseline and optional Reduced14 SP arms.
 % Usage: run_estimation(); does NOT reprocess IQ or fit a new model.
 c=sp_comparison_config(varargin{:});
 estimateAll(c,c);
 out=struct("stage","estimate","experiments",c.Experiments, ...
-    "arms",c.arms,"comparison_name",c.comparisonName);
+    "arms",c.arms,"comparison_name",c.comparisonName, ...
+    "analysis_name",c.analysisName);
 end
 
 function estimateAll(o,c)
@@ -12,13 +13,17 @@ assert(~isempty(which("reqml.predictSWS")), ...
     "SPCompare:REQML","reqml.predictSWS not available.");
 assert(~isempty(which("reqml.models.loadQ0Model")), ...
     "SPCompare:REQML","Model loader not available.");
-% Deployment-compatible v2 bundle, generated from the EXISTING fitted model.
-% This does NOT retrain. Refuses to replace any existing inconsistent bundle.
-makeFilteredV2Bundle(c.v2Checkpoint,c.v2Bundle,o.ReqmlRoot);
-modelFiles=[resolveBundle(c.v1);resolveBundle(c.v1); ...
-    resolveBundle(c.v2Bundle);resolveBundle(c.candidate10); ...
-    resolveBundle(c.candidate);resolveBundle(c.candidate10); ...
-    resolveBundle(c.candidate)];
+% Only materialize filtered-v2 when its arm was selected; Reduced14
+% already has a provenance-checked transfer bundle from REQ-ML training.
+if any(c.arms=="C_filtered_v2")
+    % Deployment-compatible bundle, generated from an EXISTING fitted model.
+    % No retraining and no replacement of an inconsistent prior bundle.
+    makeFilteredV2Bundle(c.v2Checkpoint,c.v2Bundle,o.ReqmlRoot);
+end
+modelFiles=strings(numel(c.arms),1);
+for k=1:numel(c.arms)
+    modelFiles(k)=resolveBundle(c.modelPaths(k));
+end
 assert(numel(modelFiles)==numel(c.arms) && ...
     numel(c.inputKinds)==numel(c.arms), ...
     "SPCompare:ArmMapping","Model file and processing lists must align.");
