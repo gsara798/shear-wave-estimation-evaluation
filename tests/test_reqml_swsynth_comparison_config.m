@@ -40,7 +40,12 @@ verifyEqual(testCase,C.ModelPaths, ...
     fullfile("/nonexistent/readonly","training","q0_v5_clean_campaign", ...
     "outputs","reduced14_transfer_bundle_v1","model_bundle.mat"));
 verifyTrue(testCase,contains(C.analysisRoot,"alternatives"));
-verifyEqual(testCase,numel(C.AllArms),8);
+verifyEqual(testCase,numel(C.AllArms),9);
+% New arm reuses the *same* frozen regressor on a filtered complex field.
+filtered=swsynth_comparison_config( ...
+    ReqmlRoot="/nonexistent/readonly",Arms="reduced14_filtered",StepPixels=5);
+verifyEqual(testCase,filtered.Inputs,"filtered");
+verifyEqual(testCase,filtered.ModelPaths,C.ModelPaths);
 verifyEqual(testCase,C.Frequencies,[300 400 500 600]);
 allArms=[legacy.Arms,"reduced14"];
 combined=swsynth_comparison_config( ...
