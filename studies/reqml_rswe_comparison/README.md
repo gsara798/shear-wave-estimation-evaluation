@@ -1,0 +1,118 @@
+# Experimental REQ-ML comparison — RSWE phantoms, M=2
+
+RSWE counterpart of studies/reqml_sp_comparison. Three execution stages
+(IQ processing, frozen-model estimation, ROI analysis) plus comparative
+plots, with separate MATLAB names and RSWE output paths. **No changes
+to fitted Reduced14 or other model bundles.**
+
+## Acquisition settings
+
+Expected experiments under
+/Users/sara/local/experimental-data-reorganized/2026-02-27:
+
+- 2026Feb27_dl_rswe
+- 2026Feb27_homo_5perc_rswe
+- 2026Feb27_homo_10perc_rswe
+
+The first two names have been referenced previously; the 10% RSWE name
+follows SP conventions and **must be confirmed locally**. If it is absent,
+pass the same two-element Experiments array to each stage.
+
+Frozen settings: 300/400/500/600 Hz; M=2; StepPixels=2; EWP no
+SVD mode removal (RemoveSVDModes=0), isotropic sampling, raw complex
+wavefield then derived Q0-v5 global FFT donut (CsMin=0.8, CsMax=8
+m/s, taper=0.06).
+
+## Five-arm model comparison
+
+| Arm | Input | Frozen fitted model |
+| --- | --- | --- |
+| A_raw_v1 | Raw | Reduced16 v1 |
+| reduced14 | Raw | Reduced14 train-210 |
+| B_filtered_v1 | Global donut | Same raw-trained Reduced16 v1 |
+| reduced14_filtered | Global donut | Same raw-trained Reduced14 |
+| candidate10_filtered | Global donut | Candidate10 historical |
+
+Filtered arms use raw-trained models (preprocessing transfer), and
+Candidate10 is an external benchmark, not a matched feature ablation.
+If necessary, export the Reduced14 frozen bundle using the instructions
+in ../reqml_sp_comparison/README.md before starting estimation.
+
+### ROI definition
+
+| Phantom | ROI | Center [x,z] mm | Size [width,height] mm |
+| --- | --- | --- | --- |
+| Homogeneous 5%, 10% | central | [18,18] | [16,14] |
+| Double layer | ROI1 (soft) | [18,10] | [10,5] |
+| Double layer | ROI2 (hard) | [18,25] | [10,5] |
+
+The homogeneous central rectangle spans x=10–26, z=11–25 mm.
+Verify ROI position against B-mode/wavefield and inspect the actual
+selected extents: valid map support may vary with frequency.
+
+## Run in MATLAB
+
+All entry points are RSWE-prefixed to prevent a MATLAB-path collision
+when the SP and RSWE study folders are both on the path.
+
+~~~matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+addpath(fullfile(pwd,"src"),"-begin")
+addpath(fullfile(pwd,"studies","reqml_rswe_comparison"),"-begin")
+clear rswe_comparison_config rswe_run_processing rswe_run_estimation ...
+    rswe_run_analysis rswe_run_plots rswe_plot_model_comparison ...
+    rswe_comparison_rois
+rehash
+
+% Stage 1: EWP from IQ and derived global-donut wavefields.
+rswe_run_processing(UseParallel=true);
+
+% Stage 2: frozen predictions, resumable.
+rswe_run_estimation(UseParallel=true);
+
+% Stage 3: ROI CSV, mean SWS/CV frequency plots, model map montages,
+% paired contrasts, retaining processed wavefields and predictions.
+result=rswe_run_analysis(MakeComparisonPlots=true);
+disp(result.summary)
+
+% Optional: remake figures using saved results.
+rswe_run_plots();
+~~~
+
+If only the two previously referenced RSWE experiments exist:
+
+~~~matlab
+rsweExperiments=["2026Feb27_dl_rswe","2026Feb27_homo_5perc_rswe"];
+rswe_run_processing(Experiments=rsweExperiments);
+rswe_run_estimation(Experiments=rsweExperiments);
+result=rswe_run_analysis(Experiments=rsweExperiments);
+~~~
+
+For a pilot, use Experiments="2026Feb27_dl_rswe" and
+UseParallel=false in each stage; then expand the experiment list.
+Raw test files must match the SP file pattern test1_{frequency}Hz.mat
+unless locally confirmed otherwise.
+
+## Output layout
+
+Processed wavefields:
+
+- experiment/processed/reqml_compare_raw_no_spatial_v1/
+- experiment/processed/reqml_compare_global_donut_0p8_8_v1/
+
+Frozen estimates are written to:
+
+- experiment/estimates/reqml_rswe_compare_m2_0p8_8_v1/REQ-ML/ARM/FREQHz/M2/reqml_result.mat
+
+ROI statistics, maps and comparison plots are written to:
+
+- experiment/analysis/reqml_rswe_compare_m2_0p8_8_v1_reduced14_5arms_v1_central_homo_v1/
+- DataRoot/reqml_rswe_compare_m2_0p8_8_v1_reduced14_5arms_v1_central_homo_v1/all_experiments_roi_statistics.csv
+
+SP outputs and fitted models are not touched. Existing compatible
+processed/estimated files are verified and resumed; changed identities
+are rejected, not overwritten.
+
+MATLAB inference and plotting cannot be validated until the local
+experimental MAT files and frozen bundles are available. Neither spatial
+CV nor spatial SD proves experimental SWS accuracy.

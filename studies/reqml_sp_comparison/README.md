@@ -343,3 +343,35 @@ four-arm 2×2 contrasts, and adds
 `candidate10_filtered_vs_reduced_roi_mean` to compare Candidate10
 with Reduced14 and Reduced16 **under identical filtering**.
 The four-, seven-, and nine-arm analyses remain unchanged.
+
+
+## Central homogeneous ROI, versioned analysis (2026-11-04)
+
+New ROI policy:
+
+| Phantom | ROI | Center [x,z] mm | Size [width,height] mm |
+| --- | --- | --- | --- |
+| Homogeneous 5% / 10% SP | central | [18,18] | [16,14] |
+| Double-layer SP | ROI1 (soft) | [18,10] | [10,5] |
+| Double-layer SP | ROI2 (hard) | [18,25] | [10,5] |
+
+The homogeneous central rectangle spans x=10–26 and z=11–25 mm.
+All arms share the same physical ROI. The earlier two-ROI sections above
+describe historical analyses; the updated analysis/plot functions use
+sp_comparison_rois(experiment), supporting one or two ROIs per phantom.
+
+New analyses end in _central_homo_v2 (e.g.,
+reqml_sp_compare_m2_0p8_8_v1_reduced14_5arms_v1_central_homo_v2);
+the old tables and plots remain intact. Existing inference files are reused.
+
+~~~matlab
+five=["A_raw_v1","reduced14","B_filtered_v1", ...
+    "reduced14_filtered","candidate10_filtered"];
+result=run_analysis(Arms=five,MakeComparisonPlots=true);
+disp(result.summary)
+~~~
+
+The rectangle is nominal and valid map coverage may differ by frequency.
+Inspect selected_pixels, valid_fraction and actual selected extents for
+formal frequency consistency. The RSWE analogue is documented at
+../reqml_rswe_comparison/README.md.

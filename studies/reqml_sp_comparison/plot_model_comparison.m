@@ -7,7 +7,7 @@ function output = plot_model_comparison(options)
 % and the saved per-frequency reqml_result.mat files. No reprocessing,
 % model fitting, or new REQ predictions occur in this function.
 %
-% Figures per SP experiment:
+% Figures per SP experiment (one large central ROI for homogeneous):
 %   - One frequency-dependence figure for each ROI: mean SWS +/- spatial
 %     SD and spatial CV, with selected arms on shared axes.
 %   - One SWS map montage per frequency (fixed [1,4] m/s color range).
@@ -73,16 +73,17 @@ required=["experiment","model","frequency_hz","M","name", ...
     "mean_sws","std_sws","cv_percent","valid_fraction"];
 assert(all(ismember(required,string(T.Properties.VariableNames))), ...
     "SPCompare:PlotsSchema","Missing ROI statistics columns.");
-roiNames=unique(string(T.name),"stable");
-assert(numel(roiNames)==2,"SPCompare:ROIs", ...
-    "Expected the two predefined ROIs (ROI1 and ROI2).");
-rois=[struct("name","ROI1","center",[18 10],"size",[10 5]), ...
-      struct("name","ROI2","center",[18 25],"size",[10 5])];
+
 output=strings(0,1);
 for experiment=options.Experiments
     S=T(string(T.experiment)==experiment & double(T.M)==options.M,:);
     assert(~isempty(S),"SPCompare:PlotsEmpty", ...
         "No ROI results for %s",experiment);
+    rois=sp_comparison_rois(experiment);
+    roiNames=string({rois.name});
+    assert(isempty(setxor(unique(string(S.name)),roiNames(:))), ...
+        "SPCompare:ROIs", ...
+        "ROI table does not match the defined ROIs for %s. Rerun analysis.",experiment);
     figDir=fullfile(options.DataRoot,experiment, ...
         "analysis",analysisName,"comparison_figures");
     if ~isfolder(figDir),mkdir(figDir);end
@@ -91,7 +92,7 @@ for experiment=options.Experiments
     for rn=roiNames'
         fig=figure("Visible","off","Color","w", ...
             "Position",[80 80 1050 890]);
-        tl=tiledlayout(fig,2,1,"Padding","compact", ...
+        tl=tiledlayout(fig,numel(roiNames),1,"Padding","compact", ...
             "TileSpacing","compact");
         ax1=nexttile(tl);hold(ax1,"on");
         ax2=nexttile(tl);hold(ax2,"on");
@@ -137,7 +138,7 @@ for experiment=options.Experiments
     % Paired change in ROI mean (NO SWS accuracy claim without truth).
     fig=figure("Visible","off","Color","w", ...
         "Position",[80 80 1040 760]);
-    t=tiledlayout(fig,2,1,"Padding","compact");
+    t=tiledlayout(fig,numel(roiNames),1,"Padding","compact");
     for ri=1:numel(roiNames)
         rn=roiNames(ri);
         ax=nexttile(t);hold(ax,"on");
@@ -169,7 +170,7 @@ for experiment=options.Experiments
     if ~isFocused
     fig=figure("Visible","off","Color","w", ...
         "Position",[80 80 1040 760]);
-    tiled=tiledlayout(fig,2,1,"Padding","compact");
+    tiled=tiledlayout(fig,numel(roiNames),1,"Padding","compact");
     for ri=1:numel(roiNames)
         rn=roiNames(ri);
         ax=nexttile(tiled);hold(ax,"on");
@@ -216,7 +217,7 @@ for experiment=options.Experiments
     if isFocused
         fig=figure("Visible","off","Color","w", ...
             "Position",[80 80 1080 780]);
-        t=tiledlayout(fig,2,1,"Padding","compact", ...
+        t=tiledlayout(fig,numel(roiNames),1,"Padding","compact", ...
             "TileSpacing","compact");
         for ri=1:numel(roiNames)
             rn=roiNames(ri);
@@ -264,7 +265,7 @@ for experiment=options.Experiments
     if isequal(arms,fiveArms)
         fig=figure("Visible","off","Color","w", ...
             "Position",[80 80 1040 760]);
-        t=tiledlayout(fig,2,1,"Padding","compact");
+        t=tiledlayout(fig,numel(roiNames),1,"Padding","compact");
         for ri=1:numel(roiNames)
             rn=roiNames(ri);
             ax=nexttile(t);hold(ax,"on");

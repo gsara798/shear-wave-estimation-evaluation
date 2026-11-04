@@ -16,7 +16,7 @@ verifyEqual(testCase,numel(c.arms),7);
 verifyEqual(testCase,c.arms,c.legacyArms);
 verifyEqual(testCase,c.inputKinds, ...
     ["raw","filtered","filtered","raw","raw","filtered","filtered"]);
-verifyEqual(testCase,c.analysisName,c.comparisonName);
+verifyTrue(testCase,endsWith(c.analysisName,"_central_homo_v2"));
 verifyEqual(testCase,c.StepPixels,2);
 verifyEqual(testCase,c.M,2);
 verifyEqual(testCase,c.modelPaths(1),c.v1);
@@ -51,7 +51,7 @@ verifyEqual(testCase,numel(full.arms),9);
 verifyEqual(testCase,full.arms,full.allArms);
 verifyEqual(testCase,full.comparisonName,legacy.comparisonName);
 verifyNotEqual(testCase,full.analysisName,legacy.analysisName);
-verifyTrue(testCase,endsWith(full.analysisName,"reduced14_9arms_v1"));
+verifyTrue(testCase,contains(full.analysisName,"reduced14_9arms_v1"));
 verifyEqual(testCase,full.modelPaths(1:7),legacy.modelPaths);
 verifyEqual(testCase,full.inputKinds(1:7),legacy.inputKinds);
 end
@@ -65,7 +65,7 @@ verifyEqual(testCase,numel(c.arms),4);
 verifyEqual(testCase,c.inputKinds,["raw","raw","filtered","filtered"]);
 verifyEqual(testCase,c.modelPaths, ...
     [c.v1;c.reduced14Bundle;c.v1;c.reduced14Bundle]);
-verifyTrue(testCase,endsWith(c.analysisName,"reduced14_4arms_v1"));
+verifyTrue(testCase,contains(c.analysisName,"reduced14_4arms_v1"));
 verifyNotEqual(testCase,c.analysisName,c.comparisonName);
 verifyEqual(testCase,c.M,2);
 verifyEqual(testCase,c.StepPixels,2);
@@ -85,7 +85,7 @@ verifyEqual(testCase,five.modelPaths, ...
     [five.v1;five.reduced14Bundle;five.v1;five.reduced14Bundle; ...
     five.candidate10]);
 verifyEqual(testCase,five.comparisonName,four.comparisonName);
-verifyTrue(testCase,endsWith(five.analysisName,"reduced14_5arms_v1"));
+verifyTrue(testCase,contains(five.analysisName,"reduced14_5arms_v1"));
 verifyNotEqual(testCase,five.analysisName,four.analysisName);
 verifyEqual(testCase,five.M,2);
 verifyEqual(testCase,five.StepPixels,2);
