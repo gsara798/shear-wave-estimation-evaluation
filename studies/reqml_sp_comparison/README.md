@@ -265,3 +265,49 @@ runtests("tests/test_reqml_sp_reduced14_configuration.m")
 
 The validation and inference stages require the saved files on the
 user's Mac; they have not been executed by this repository change.
+
+
+## Focused four-arm comparison: Reduced16 vs Reduced14, raw vs filtered
+
+Use these **four existing inference arms** to isolate the effect of removing
+two features from the effect of fixed spatial filtering:
+
+| Arm | Fitted model | Experimental input |
+| --- | --- | --- |
+| `A_raw_v1` | Reduced16 | Raw (no spatial filter) |
+| `reduced14` | Reduced14 | Raw (no spatial filter) |
+| `B_filtered_v1` | **Same** Reduced16 bundle as `A_raw_v1` | Fixed 0.8–8 m/s global FFT donut |
+| `reduced14_filtered` | **Same** Reduced14 bundle as `reduced14` | Same fixed donut |
+
+The two filtered arms measure **transfer of raw-trained models to filtered
+data**. Neither was refitted on the filtered wavefield. All four use the
+same frozen phantoms, 300–600 Hz frequencies, M=2, StepPixels=2 and ROIs.
+
+After the four estimates per frequency exist (the first three arms may
+already be present), run only the focused analysis, **without new inference**:
+
+~~~matlab
+four=["A_raw_v1","reduced14","B_filtered_v1","reduced14_filtered"];
+
+result=run_analysis(Arms=four,MakeComparisonPlots=true);
+disp(result.summary)
+
+% Optional: regenerate just this set of figures.
+figures=run_plots(Arms=four);
+~~~
+
+If the Reduced14 estimates have not been generated yet, use the
+`run_estimation(Arms=["reduced14","reduced14_filtered"])` command above
+first; it resumes existing compatible predictions.
+
+A dedicated analysis folder prevents overwriting earlier seven- or
+nine-model tables and plots:
+`reqml_sp_compare_m2_0p8_8_v1_reduced14_4arms_v1`.
+Its figures include four-curve ROI mean SWS and spatial CV panels,
+four-map montages and `feature_filter_2x2_roi_mean`:
+Reduced14 minus Reduced16 (raw and filtered) and filtered minus raw
+(Reduced16 and Reduced14), matched by phantom, ROI and frequency.
+
+Without independent phantom SWS ground truth, these are **comparisons of
+predicted SWS and spatial variation**, not experimental accuracy estimates.
+Spatial SD across an ROI is not a confidence interval.
