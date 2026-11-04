@@ -375,3 +375,31 @@ The rectangle is nominal and valid map coverage may differ by frequency.
 Inspect selected_pixels, valid_fraction and actual selected extents for
 formal frequency consistency. The RSWE analogue is documented at
 ../reqml_rswe_comparison/README.md.
+
+
+### Matched bilayer pixel support (2026-11-04, revision)
+
+The previous 10×5 mm bilayer ROIs were unevenly cropped at 300 Hz.
+The current geometry, applied to both SP and RSWE, is:
+
+| ROI | Center [x,z] mm | Size [width,height] mm | Physical extent (mm) |
+| --- | --- | --- | --- |
+| ROI1 (soft) | [18,11.5] | [16.2,2.0] | x=9.9–26.1, z=10.5–12.5 |
+| ROI2 (hard) | [18,24.2] | [16.2,2.0] | x=9.9–26.1, z=23.2–25.2 |
+
+The ROIs are wider laterally and thinner axially. On the measured
+SP analysis-grid lattice (approximately 0.4053 mm/step), each
+rectangle is **predicted** to include 40×5 = 200 map centers for each
+frequency from 300 to 600 Hz, if the full rectangle remains inside
+the map support. Grid phase may shift by half a sample between frequencies,
+so identical counts do not mean identical sampling coordinates.
+
+The analysis now checks **both ROIs, all frequencies and all arms** for
+equal selected pixel counts. It reports unequal usable pixel counts
+caused by model valid masks. Any selected-count mismatch stops the
+analysis with an explicit error, rather than producing misleading
+frequency curves. Always review the selected physical extents.
+
+Results now use the analysis suffix _matched_bilayer_v3, keeping
+the prior _central_homo_v2 and original two-ROI outputs intact.
+No processing or estimation needs to be rerun.

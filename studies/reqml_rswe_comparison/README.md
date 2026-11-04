@@ -116,3 +116,22 @@ are rejected, not overwritten.
 MATLAB inference and plotting cannot be validated until the local
 experimental MAT files and frozen bundles are available. Neither spatial
 CV nor spatial SD proves experimental SWS accuracy.
+
+
+## Revision: equal bilayer ROI pixel counts
+
+Current bilayer rectangles have width 16.2 mm and height 2.0 mm.
+ROI1 (soft) is centered at [18,11.5] mm and ROI2 (hard) at
+[18,24.2] mm. Both use the same nominal area. The homogeneous
+central ROI is unchanged (16×14 mm centered at [18,18] mm).
+
+RSWE map coverage has **not** been inspected locally. During analysis,
+swseval.metrics.assertEqualBilayerPixelCounts checks every model,
+both ROIs and 300/400/500/600 Hz for matching selected counts.
+It warns if valid-mask exclusions differ. If the RSWE support differs
+from SP, a mismatch is reported and must be resolved before interpreting
+frequency curves; a nominal geometric rectangle cannot guarantee
+equal actual coverage on an uninspected dataset.
+
+The new RSWE analysis suffix is _matched_bilayer_v2; previous
+_central_homo_v1 analysis files are preserved. Predictions are reused.

@@ -30,10 +30,10 @@ for rois={sp_comparison_rois("2026Feb27_dl_sp"), ...
     r=rois{1};
     verifyEqual(testCase,numel(r),2);
     verifyEqual(testCase,string({r.name}),["ROI1","ROI2"]);
-    verifyEqual(testCase,r(1).center,[18 10]);
-    verifyEqual(testCase,r(2).center,[18 25]);
-    verifyEqual(testCase,r(1).size,[10 5]);
-    verifyEqual(testCase,r(2).size,[10 5]);
+    verifyEqual(testCase,r(1).center,[18 11.5]);
+    verifyEqual(testCase,r(2).center,[18 24.2]);
+    verifyEqual(testCase,r(1).size,[16.2 2]);
+    verifyEqual(testCase,r(2).size,[16.2 2]);
 end
 end
 
@@ -44,7 +44,7 @@ c=sp_comparison_config(ReqmlRoot=repo,EwpRoot=repo,EvalRoot=repo, ...
         "reduced14_filtered","candidate10_filtered"]);
 verifyEqual(testCase,c.comparisonName,"reqml_sp_compare_m2_0p8_8_v1");
 verifyTrue(testCase,endsWith(c.analysisName, ...
-    "_reduced14_5arms_v1_central_homo_v2"));
+    "_reduced14_5arms_v1_matched_bilayer_v3"));
 verifyEqual(testCase,c.M,2);
 verifyEqual(testCase,c.StepPixels,2);
 end
@@ -67,7 +67,7 @@ verifyEqual(testCase,c.StepPixels,2);
 verifyEqual(testCase,c.Frequencies,[300 400 500 600]);
 verifyEqual(testCase,c.comparisonName,"reqml_rswe_compare_m2_0p8_8_v1");
 verifyTrue(testCase,endsWith(c.analysisName, ...
-    "_reduced14_5arms_v1_central_homo_v1"));
+    "_reduced14_5arms_v1_matched_bilayer_v2"));
 verifyNotEqual(testCase,c.comparisonName, ...
     "reqml_sp_compare_m2_0p8_8_v1");
 end
@@ -80,4 +80,22 @@ verifyEqual(testCase,numel(c.Experiments),2);
 verifyError(testCase,@() rswe_comparison_config( ...
     ReqmlRoot=repo,EwpRoot=repo,EvalRoot=repo, ...
     Experiments="2026Feb27_dl_sp"),"RSWECompare:Experiments");
+end
+
+
+function testBilayerPixelCountsMatched(testCase)
+name=["ROI1";"ROI1";"ROI2";"ROI2"];
+model=repmat("reduced14",4,1);
+frequency_hz=[300;600;300;600];
+selected_pixels=[200;200;200;200];
+valid_pixels=selected_pixels;
+T=table(name,model,frequency_hz,selected_pixels,valid_pixels);
+n=swseval.metrics.assertEqualBilayerPixelCounts( ...
+    T,["ROI1","ROI2"],"reduced14",[300 600]);
+verifyEqual(testCase,n,200);
+
+T.selected_pixels(2)=195;
+verifyError(testCase,@() swseval.metrics.assertEqualBilayerPixelCounts( ...
+    T,["ROI1","ROI2"],"reduced14",[300 600]), ...
+    "swseval:InconsistentROIPixels");
 end

@@ -80,7 +80,7 @@ if ~isequal(c.arms,c.legacyArms)
     end
 end
 % Version ROI analysis separately from SP and from any later RSWE variant.
-c.analysisName=c.analysisName+"_central_homo_v1";
+c.analysisName=c.analysisName+"_matched_bilayer_v2";
 c.csMin=0.8;c.csMax=8;c.taper=0.06;
 c.v1=fullfile(o.ReqmlRoot,"models","reduced16","model_bundle.mat");
 c.v2Checkpoint=fullfile(o.ReqmlRoot,"training","q0_v5_clean_campaign", ...
