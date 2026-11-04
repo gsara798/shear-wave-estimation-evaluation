@@ -3,6 +3,25 @@ function tests=test_reduced14_quality_swsynth
 tests=functiontests(localfunctions);
 end
 
+function setupOnce(testCase)
+repo=string(fileparts(fileparts(mfilename("fullpath"))));
+addpath(fullfile(repo,"src"),"-begin");
+addpath(fullfile(repo,"studies","reqml_frequency_bias_swsynth"),"-begin");
+addpath(fullfile(repo,"studies","reqml_quality_mask_swsynth"),"-begin");
+testCase.TestData.repo=repo;
+end
+
+function testReadOnlyPlan(testCase)
+R=run_swsynth_quality_mask_study(Mode="plan", ...
+    EvalRoot=testCase.TestData.repo,ReqmlRoot="/nonexistent/readonly", ...
+    Arms="reduced14",StepPixels=5);
+verifyEqual(testCase,height(R.cases),20);
+verifyEqual(testCase,numel(unique(R.cases.series)),5);
+verifyEqual(testCase,R.mode,"plan");
+verifyEqual(testCase,height(R.summary),0);
+verifyNotEmpty(testCase,R.missing_inputs);
+end
+
 function testPerfectRiskRanking(testCase)
 A=fixture();
 mask=true(2);
