@@ -43,18 +43,21 @@ for experiment=options.Experiments
         temporalFile=fullfile(diagnosis,"displacement_quality",stem, ...
             "temporal_consistency.mat");
         files=[estimateFile iqFile temporalFile];
-        if ~all(isfile(files))
-            for file=files(~isfile(files))
+        present=isfile(files);
+        if ~all(present)
+            absent=files(~present);
+            for file=absent
                 missing(end+1,1)=string(file); %#ok<AGROW>
             end
             if options.ContinueOnMissing
                 warning("swseval:SignalQualityMissing", ...
-                    "Skipping %s %g Hz: required MAT(s) missing.",experiment,frequency);
+                    "Skipping %s %g Hz. Missing:\n%s",experiment,frequency, ...
+                    strjoin(absent,newline));
                 continue
             end
             error("swseval:SignalQualityMissing", ...
                 "Missing input MAT(s) for %s %g Hz:\n%s",experiment,frequency, ...
-                strjoin(files(~isfile(files)),newline));
+                strjoin(absent,newline));
         end
 
         D=swseval.signalquality.loadAndAlign(estimateFile,temporalFile,iqFile, ...
@@ -80,18 +83,32 @@ for experiment=options.Experiments
                     ["png","pdf"]);
                 close(fig);
             end
-            prefix=table(experiment,frequency,string(roi.name), ...
-                string(options.Arm),options.M, ...
-                "VariableNames",{"experiment","frequency_hz","roi", ...
-                "arm","M"});
-            row=[prefix table(A.summary.valid_count,A.summary.high_count, ...
-                A.summary.median_sws_m_s,A.summary.high_threshold_m_s, ...
-                A.summary.window_width_mm,"VariableNames", ...
-                {"valid_count","high_count","median_sws_m_s", ...
-                "high_threshold_m_s","window_width_mm"})];
-            summaryRows=[summaryRows;row]; %#ok<AGROW>
-            metricRows=[metricRows;repmat(prefix,height(A.metrics),1) A.metrics]; %#ok<AGROW>
-            gateRows=[gateRows;repmat(prefix,height(A.gates),1) A.gates]; %#ok<AGROW>
+            % Set column names explicitly: expressions such as
+            % string(roi.name) can otherwise create automatic VarN names,
+            % which may collide when horizontally concatenating tables.
+            prefix=table();
+            prefix.experiment=string(experiment);
+            prefix.frequency_hz=double(frequency);
+            prefix.roi=string(roi.name);
+            prefix.arm=string(options.Arm);
+            prefix.M=double(options.M);
+            row=prefix;
+            row.valid_count=A.summary.valid_count;
+            row.high_count=A.summary.high_count;
+            row.median_sws_m_s=A.summary.median_sws_m_s;
+            row.high_threshold_m_s=A.summary.high_threshold_m_s;
+            row.window_width_mm=A.summary.window_width_mm;
+            metricRow=[repmat(prefix,height(A.metrics),1), A.metrics];
+            gateRow=[repmat(prefix,height(A.gates),1), A.gates];
+            if isempty(summaryRows)
+                summaryRows=row;
+                metricRows=metricRow;
+                gateRows=gateRow;
+            else
+                summaryRows=[summaryRows;row]; %#ok<AGROW>
+                metricRows=[metricRows;metricRow]; %#ok<AGROW>
+                gateRows=[gateRows;gateRow]; %#ok<AGROW>
+            end
             fprintf("[%s %g Hz | %s] %d valid, %d upper-tail pixels\n", ...
                 experiment,frequency,roi.name,A.summary.valid_count, ...
                 A.summary.high_count);

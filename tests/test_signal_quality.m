@@ -42,6 +42,42 @@ D=swseval.signalquality.loadAndAlign(estimateFile,temporalFile,iqFile);
 verifyTrue(testCase,all(isnan(D.quality.correlation_mean(:,4))));
 end
 
+function testStudyRunnerCombinesNamedColumns(testCase)
+% Regression: a previously valid analysis failed when concatenating
+% temporary tables whose implicit VarN columns collided.
+[root,estimateFile,temporalFile,iqFile]=syntheticInputs();
+cleanup=onCleanup(@()rmdir(root,"s")); %#ok<NASGU>
+repoRoot=fileparts(fileparts(mfilename("fullpath")));
+studyDir=fullfile(repoRoot,"studies","reqml_signal_quality");
+addpath(studyDir);
+cleanupPath=onCleanup(@()rmpath(studyDir)); %#ok<NASGU>
+experiment="synthetic_experiment";
+caseRoot=fullfile(root,experiment);
+estimateDest=fullfile(caseRoot,"estimates","synthetic_estimates", ...
+    "REQ-ML","test_arm","500Hz","M2","reqml_result.mat");
+temporalDest=fullfile(caseRoot,"analysis","synthetic_quality", ...
+    "displacement_quality","test1_500Hz","temporal_consistency.mat");
+iqDest=fullfile(caseRoot,"analysis","synthetic_quality", ...
+    "iq_quality","test1_500Hz","iq_quality.mat");
+mkdir(fileparts(estimateDest));mkdir(fileparts(temporalDest));
+mkdir(fileparts(iqDest));
+copyfile(estimateFile,estimateDest);
+copyfile(temporalFile,temporalDest);
+copyfile(iqFile,iqDest);
+roi=swseval.roi.rectangle("central",Center=[1.5 1.5], ...
+    Size=[3 3],Units="mm");
+out=run_signal_quality_study(DataRoot=root,Experiments=experiment, ...
+    Frequencies=500,EstimationRun="synthetic_estimates", ...
+    Arm="test_arm",M=2,QualityRun="synthetic_quality", ...
+    OutputRun="synthetic_output",ROIs=roi,ExportFigures=false, ...
+    ContinueOnMissing=false);
+verifyEqual(testCase,height(out.summary),1);
+verifyEqual(testCase,out.summary.valid_count,16);
+verifyTrue(testCase,ismember("frequency_hz",out.metrics.Properties.VariableNames));
+verifyTrue(testCase,isfile(fullfile(root,"synthetic_output", ...
+    "metric_associations_all.csv")));
+end
+
 function [folder,estimateFile,temporalFile,iqFile]=syntheticInputs()
 folder=string(tempname);mkdir(folder);
 estimateFile=fullfile(folder,"reqml_result.mat");
