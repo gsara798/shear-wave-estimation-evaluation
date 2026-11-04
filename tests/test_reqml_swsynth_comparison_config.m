@@ -26,6 +26,30 @@ verifyEqual(testCase,nnz(C.Inputs=="filtered"),4);
 verifyTrue(testCase,startsWith(C.outputRoot,C.studyRoot));
 end
 
+function testReduced14OptInAndLegacyCompatibility(testCase)
+% The exploratory model only adds an opt-in raw arm; frozen defaults stay.
+legacy=swsynth_comparison_config(ReqmlRoot="/nonexistent/readonly");
+verifyEqual(testCase,numel(legacy.Arms),7);
+verifyEqual(testCase,legacy.analysisRoot, ...
+    fullfile(legacy.outputRoot,"analysis"));
+C=swsynth_comparison_config( ...
+    ReqmlRoot="/nonexistent/readonly",Arms="reduced14",StepPixels=5);
+verifyEqual(testCase,C.Arms,"reduced14");
+verifyEqual(testCase,C.Inputs,"raw");
+verifyEqual(testCase,C.ModelPaths, ...
+    fullfile("/nonexistent/readonly","training","q0_v5_clean_campaign", ...
+    "outputs","reduced14_transfer_bundle_v1","model_bundle.mat"));
+verifyTrue(testCase,contains(C.analysisRoot,"alternatives"));
+verifyEqual(testCase,numel(C.AllArms),8);
+verifyEqual(testCase,C.Frequencies,[300 400 500 600]);
+allArms=[legacy.Arms,"reduced14"];
+combined=swsynth_comparison_config( ...
+    ReqmlRoot="/nonexistent/readonly",Arms=allArms,StepPixels=5);
+verifyEqual(testCase,combined.Inputs(end),"raw");
+verifyEqual(testCase,numel(combined.Inputs),8);
+verifyTrue(testCase,contains(combined.analysisRoot,"step5_"));
+end
+
 function testRoisAndReferenceTruth(testCase)
 [r,t]=swsynth_comparison_rois("plane_homogeneous",1.8);
 verifyEqual(testCase,numel(r),1);
