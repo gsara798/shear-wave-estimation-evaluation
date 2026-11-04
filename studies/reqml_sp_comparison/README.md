@@ -403,3 +403,32 @@ frequency curves. Always review the selected physical extents.
 Results now use the analysis suffix _matched_bilayer_v3, keeping
 the prior _central_homo_v2 and original two-ROI outputs intact.
 No processing or estimation needs to be rerun.
+
+
+### Centered bilayer ROI revision and one-ROI plotting correction (2026-11-04)
+
+The **current** bilayer ROIs supersede the older positions described in the
+historical sections above. Both SP and RSWE use the following same-sized,
+interior rectangles:
+
+| ROI | Center [x,z] mm | Size [width,height] mm | Physical extent (mm) |
+| --- | --- | --- | --- |
+| ROI1 (soft) | [19,15] | [14.2,2.4] | x=11.9–26.1, z=13.8–16.2 |
+| ROI2 (hard) | [19,22.5] | [14.2,2.4] | x=11.9–26.1, z=21.3–23.7 |
+
+This moves ROI1 upward and ROI2 downward, away from the image and layer
+boundaries visible in the 300 Hz bilayer map. The nominal pixel count is
+**estimated** at 35×6 = 210 per rectangle on the observed ~0.4053 mm
+SP sampling lattice; this is not a substitute for the actual per-frequency
+assertion. The map boundaries, valid-mask coverage, selected pixel counts,
+and physical extents must still be checked in the output CSV for every arm.
+
+The homogeneous phantom still uses **one** central ROI at [18,18] mm,
+size [16,14] mm. Comparison plotting now iterates ROI names as scalar
+strings and allocates **two panels** (SWS and spatial CV) even when the
+experiment has only one ROI. This fixes the reported MATLAB dimension
+mismatch in `plot_model_comparison` and the one-ROI tile-layout problem.
+
+The new output suffix is `_centered_bilayer_v4`. No new processing or
+REQ-ML prediction is required: rerun `run_analysis(Arms=five,
+MakeComparisonPlots=true)` after pulling the change.

@@ -80,7 +80,7 @@ for experiment=options.Experiments
     assert(~isempty(S),"SPCompare:PlotsEmpty", ...
         "No ROI results for %s",experiment);
     rois=sp_comparison_rois(experiment);
-    roiNames=string({rois.name});
+    roiNames=reshape(string({rois.name}),1,[]);
     assert(isempty(setxor(unique(string(S.name)),roiNames(:))), ...
         "SPCompare:ROIs", ...
         "ROI table does not match the defined ROIs for %s. Rerun analysis.",experiment);
@@ -89,15 +89,18 @@ for experiment=options.Experiments
     if ~isfolder(figDir),mkdir(figDir);end
 
     % One 2-panel frequency plot per ROI: same ROI for every arm.
-    for rn=roiNames'
+    for ri=1:numel(roiNames)
+        rn=roiNames(ri);
         fig=figure("Visible","off","Color","w", ...
             "Position",[80 80 1050 890]);
-        tl=tiledlayout(fig,numel(roiNames),1,"Padding","compact", ...
+        tl=tiledlayout(fig,2,1,"Padding","compact", ...
             "TileSpacing","compact");
         ax1=nexttile(tl);hold(ax1,"on");
         ax2=nexttile(tl);hold(ax2,"on");
         for a=1:numel(arms)
-            R=S(string(S.name)==rn & string(S.model)==arms(a),:);
+            mask=strcmp(string(S.name(:)),rn) & ...
+                strcmp(string(S.model(:)),arms(a));
+            R=S(mask,:);
             R=sortrows(R,"frequency_hz");
             assert(height(R)==numel(options.Frequencies) && ...
                 isequal(double(R.frequency_hz),options.Frequencies'), ...
@@ -350,7 +353,9 @@ end
 end
 
 function R=ordered(T,roi,model,frequencies)
-R=T(string(T.name)==roi & string(T.model)==model,:);
+mask=strcmp(string(T.name(:)),roi) & ...
+    strcmp(string(T.model(:)),model);
+R=T(mask,:);
 R=sortrows(R,"frequency_hz");
 assert(height(R)==numel(frequencies) && ...
     isequal(double(R.frequency_hz),frequencies'), ...

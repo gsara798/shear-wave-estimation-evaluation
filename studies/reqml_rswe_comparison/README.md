@@ -135,3 +135,21 @@ equal actual coverage on an uninspected dataset.
 
 The new RSWE analysis suffix is _matched_bilayer_v2; previous
 _central_homo_v1 analysis files are preserved. Predictions are reused.
+
+
+## Centered bilayer ROIs and single-ROI plots (2026-11-04)
+
+Current ROI1 (soft): center [19,15] mm, size [14.2,2.4] mm;
+current ROI2 (hard): center [19,22.5] mm, size [14.2,2.4] mm.
+Both span x=11.9–26.1 mm. Their z ranges are 13.8–16.2 mm and
+21.3–23.7 mm, respectively. These rectangles supersede the earlier
+edge-adjacent bilayer coordinates above and use the same geometry as SP.
+The RSWE coverage and pixel counts have **not yet been validated** on
+local RSWE maps; the analysis pixel-count assertion remains mandatory.
+
+Homogeneous phantoms continue to use a single central [18,18] mm,
+[16,14] mm ROI. `rswe_plot_model_comparison` now handles one-ROI data
+without string-array dimension mismatches or an invalid two-panel
+layout. The RSWE analysis suffix is now `_centered_bilayer_v3`.
+Existing frozen estimates can be reused; rerun
+`rswe_run_analysis(MakeComparisonPlots=true)` after pulling the change.

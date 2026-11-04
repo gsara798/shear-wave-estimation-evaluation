@@ -16,7 +16,7 @@ verifyEqual(testCase,numel(c.arms),7);
 verifyEqual(testCase,c.arms,c.legacyArms);
 verifyEqual(testCase,c.inputKinds, ...
     ["raw","filtered","filtered","raw","raw","filtered","filtered"]);
-verifyTrue(testCase,endsWith(c.analysisName,"_matched_bilayer_v3"));
+verifyTrue(testCase,endsWith(c.analysisName,"_centered_bilayer_v4"));
 verifyEqual(testCase,c.StepPixels,2);
 verifyEqual(testCase,c.M,2);
 verifyEqual(testCase,c.modelPaths(1),c.v1);

@@ -24,16 +24,16 @@ for rois={sp,rswe}
 end
 end
 
-function testBilayerROIsUnchanged(testCase)
+function testBilayerROIsCenteredAndEqualSized(testCase)
 for rois={sp_comparison_rois("2026Feb27_dl_sp"), ...
           rswe_comparison_rois("2026Feb27_dl_rswe")}
     r=rois{1};
     verifyEqual(testCase,numel(r),2);
     verifyEqual(testCase,string({r.name}),["ROI1","ROI2"]);
-    verifyEqual(testCase,r(1).center,[18 11.5]);
-    verifyEqual(testCase,r(2).center,[18 24.2]);
-    verifyEqual(testCase,r(1).size,[16.2 2]);
-    verifyEqual(testCase,r(2).size,[16.2 2]);
+    verifyEqual(testCase,r(1).center,[19 15]);
+    verifyEqual(testCase,r(2).center,[19 22.5]);
+    verifyEqual(testCase,r(1).size,[14.2 2.4]);
+    verifyEqual(testCase,r(2).size,[14.2 2.4]);
 end
 end
 
@@ -44,7 +44,7 @@ c=sp_comparison_config(ReqmlRoot=repo,EwpRoot=repo,EvalRoot=repo, ...
         "reduced14_filtered","candidate10_filtered"]);
 verifyEqual(testCase,c.comparisonName,"reqml_sp_compare_m2_0p8_8_v1");
 verifyTrue(testCase,endsWith(c.analysisName, ...
-    "_reduced14_5arms_v1_matched_bilayer_v3"));
+    "_reduced14_5arms_v1_centered_bilayer_v4"));
 verifyEqual(testCase,c.M,2);
 verifyEqual(testCase,c.StepPixels,2);
 end
@@ -67,7 +67,7 @@ verifyEqual(testCase,c.StepPixels,2);
 verifyEqual(testCase,c.Frequencies,[300 400 500 600]);
 verifyEqual(testCase,c.comparisonName,"reqml_rswe_compare_m2_0p8_8_v1");
 verifyTrue(testCase,endsWith(c.analysisName, ...
-    "_reduced14_5arms_v1_matched_bilayer_v2"));
+    "_reduced14_5arms_v1_centered_bilayer_v3"));
 verifyNotEqual(testCase,c.comparisonName, ...
     "reqml_sp_compare_m2_0p8_8_v1");
 end
