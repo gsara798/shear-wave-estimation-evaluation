@@ -72,6 +72,25 @@ verifyEqual(testCase,c.StepPixels,2);
 verifyEqual(testCase,c.Frequencies,[300 400 500 600]);
 end
 
+function testFiveArmCandidate10FilteredBenchmark(testCase)
+repo=testCase.TestData.repo;
+four=sp_comparison_config(ReqmlRoot=repo,EvalRoot=repo,EwpRoot=repo, ...
+    Arms=["A_raw_v1","reduced14","B_filtered_v1","reduced14_filtered"]);
+five=sp_comparison_config(ReqmlRoot=repo,EvalRoot=repo,EwpRoot=repo, ...
+    Arms=[four.arms,"candidate10_filtered"]);
+verifyEqual(testCase,five.arms,five.fiveArms);
+verifyEqual(testCase,five.inputKinds, ...
+    ["raw","raw","filtered","filtered","filtered"]);
+verifyEqual(testCase,five.modelPaths, ...
+    [five.v1;five.reduced14Bundle;five.v1;five.reduced14Bundle; ...
+    five.candidate10]);
+verifyEqual(testCase,five.comparisonName,four.comparisonName);
+verifyTrue(testCase,endsWith(five.analysisName,"reduced14_5arms_v1"));
+verifyNotEqual(testCase,five.analysisName,four.analysisName);
+verifyEqual(testCase,five.M,2);
+verifyEqual(testCase,five.StepPixels,2);
+end
+
 function testInvalidArmSelectionsRejected(testCase)
 repo=testCase.TestData.repo;
 verifyError(testCase,@() sp_comparison_config( ...
