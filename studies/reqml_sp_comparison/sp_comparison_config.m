@@ -52,6 +52,7 @@ c.legacyArms=["A_raw_v1","B_filtered_v1","C_filtered_v2", ...
     "candidate10","candidate", ...
     "candidate10_filtered","candidate_filtered"];
 c.allArms=[c.legacyArms,"reduced14","reduced14_filtered"];
+c.fourArms=["A_raw_v1","reduced14","B_filtered_v1","reduced14_filtered"];
 c.allInputs=["raw","filtered","filtered","raw","raw", ...
     "filtered","filtered","raw","filtered"];
 c.arms=o.Arms;
@@ -69,6 +70,8 @@ c.analysisName=c.comparisonName;
 if ~isequal(c.arms,c.legacyArms)
     if isequal(c.arms,c.allArms)
         c.analysisName=c.comparisonName+"_reduced14_9arms_v1";
+    elseif isequal(c.arms,c.fourArms)
+        c.analysisName=c.comparisonName+"_reduced14_4arms_v1";
     else
         c.analysisName=c.comparisonName+"_subset_"+strjoin(c.arms,"_");
     end
