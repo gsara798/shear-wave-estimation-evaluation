@@ -1,0 +1,59 @@
+function out=rswe_run_analysis(varargin)
+%RUN_ANALYSIS Evaluate the supported frozen RSWE arms with fixed physical ROIs.
+% Does not run EWP, fit models, or recompute predictions.
+c=rswe_comparison_config(varargin{:});
+assert(isequal(c.arms,c.legacyArms) || isequal(c.arms,c.allArms) || ...
+    isequal(c.arms,c.fourArms) || isequal(c.arms,c.fiveArms), ...
+    "RSWECompare:AnalysisArms", ...
+    "Analyze frozen seven/nine or focused four/five-arm comparisons.");
+T=analyzeAll(c,c);
+out=struct("stage","analyze","summary",T,"arms",c.arms, ...
+    "comparison_name",c.comparisonName, ...
+    "analysis_name",c.analysisName);
+if c.MakeComparisonPlots
+    rswe_plot_model_comparison(DataRoot=c.DataRoot, ...
+        Experiments=c.Experiments,Frequencies=c.Frequencies, ...
+        M=c.M,ComparisonName=c.comparisonName, ...
+        AnalysisName=c.analysisName,Arms=c.arms);
+end
+end
+
+function T=analyzeAll(o,c)
+assert(~isempty(which("swseval.analyzeSweep")), ...
+    "RSWECompare:SWSEval","swseval src not accessible.");
+
+parts=cell(numel(o.Experiments),1);
+for i=1:numel(o.Experiments)
+    experiment=o.Experiments(i);
+    rois=rswe_comparison_rois(experiment);
+    root=fullfile(o.DataRoot,experiment);
+    estimateRoot=fullfile(root,"estimates",c.comparisonName);
+    analysisRoot=fullfile(root,"analysis",c.analysisName);
+    fprintf("\n=== ANALYZE %s ===\n",experiment);
+    tab=swseval.analyzeSweep(rois, ...
+        EstimatesRoot=estimateRoot,Models=c.arms, ...
+        Frequencies=o.Frequencies,MValues=o.M, ...
+        OutputDir=analysisRoot, ...
+        SWSColorLimits=[1 4],FrequencyYLim=[1 4], ...
+        ContinueOnMissing=false,ExportMaps=true, ...
+        PlotCombinedM=false,YDecimals=2);
+    if contains(experiment,"_dl_")
+        % Enforce equal nominal pixel counts across model arms and frequencies.
+        % Valid-mask differences are reported separately, never hidden.
+        swseval.metrics.assertEqualBilayerPixelCounts(tab, ...
+            string({rois.name}),c.arms,o.Frequencies);
+    end
+    tab.experiment=repmat(experiment,height(tab),1);
+    tab=movevars(tab,"experiment","Before",1);
+    if any(tab.selected_pixels==0)
+        warning("RSWECompare:EmptyROI", ...
+            "Some ROI(s) contain no map centers in %s.",experiment);
+    end
+    parts{i}=tab;
+end
+T=vertcat(parts{:});
+reportDir=fullfile(o.DataRoot,c.analysisName);
+if ~isfolder(reportDir),mkdir(reportDir);end
+writetable(T,fullfile(reportDir,"all_experiments_roi_statistics.csv"));
+fprintf("\nCombined ROI table saved: %s\n",reportDir);
+end

@@ -7,7 +7,7 @@ function output = plot_model_comparison(options)
 % and the saved per-frequency reqml_result.mat files. No reprocessing,
 % model fitting, or new REQ predictions occur in this function.
 %
-% Figures per SP experiment:
+% Figures per SP experiment (one large central ROI for homogeneous):
 %   - One frequency-dependence figure for each ROI: mean SWS +/- spatial
 %     SD and spatial CV, with selected arms on shared axes.
 %   - One SWS map montage per frequency (fixed [1,4] m/s color range).
@@ -73,22 +73,24 @@ required=["experiment","model","frequency_hz","M","name", ...
     "mean_sws","std_sws","cv_percent","valid_fraction"];
 assert(all(ismember(required,string(T.Properties.VariableNames))), ...
     "SPCompare:PlotsSchema","Missing ROI statistics columns.");
-roiNames=unique(string(T.name),"stable");
-assert(numel(roiNames)==2,"SPCompare:ROIs", ...
-    "Expected the two predefined ROIs (ROI1 and ROI2).");
-rois=[struct("name","ROI1","center",[18 10],"size",[10 5]), ...
-      struct("name","ROI2","center",[18 25],"size",[10 5])];
+
 output=strings(0,1);
 for experiment=options.Experiments
     S=T(string(T.experiment)==experiment & double(T.M)==options.M,:);
     assert(~isempty(S),"SPCompare:PlotsEmpty", ...
         "No ROI results for %s",experiment);
+    rois=sp_comparison_rois(experiment);
+    roiNames=reshape(string({rois.name}),1,[]);
+    assert(isempty(setxor(unique(string(S.name)),roiNames(:))), ...
+        "SPCompare:ROIs", ...
+        "ROI table does not match the defined ROIs for %s. Rerun analysis.",experiment);
     figDir=fullfile(options.DataRoot,experiment, ...
         "analysis",analysisName,"comparison_figures");
     if ~isfolder(figDir),mkdir(figDir);end
 
     % One 2-panel frequency plot per ROI: same ROI for every arm.
-    for rn=roiNames'
+    for ri=1:numel(roiNames)
+        rn=roiNames(ri);
         fig=figure("Visible","off","Color","w", ...
             "Position",[80 80 1050 890]);
         tl=tiledlayout(fig,2,1,"Padding","compact", ...
@@ -96,7 +98,9 @@ for experiment=options.Experiments
         ax1=nexttile(tl);hold(ax1,"on");
         ax2=nexttile(tl);hold(ax2,"on");
         for a=1:numel(arms)
-            R=S(string(S.name)==rn & string(S.model)==arms(a),:);
+            mask=strcmp(string(S.name(:)),rn) & ...
+                strcmp(string(S.model(:)),arms(a));
+            R=S(mask,:);
             R=sortrows(R,"frequency_hz");
             assert(height(R)==numel(options.Frequencies) && ...
                 isequal(double(R.frequency_hz),options.Frequencies'), ...
@@ -137,7 +141,7 @@ for experiment=options.Experiments
     % Paired change in ROI mean (NO SWS accuracy claim without truth).
     fig=figure("Visible","off","Color","w", ...
         "Position",[80 80 1040 760]);
-    t=tiledlayout(fig,2,1,"Padding","compact");
+    t=tiledlayout(fig,numel(roiNames),1,"Padding","compact");
     for ri=1:numel(roiNames)
         rn=roiNames(ri);
         ax=nexttile(t);hold(ax,"on");
@@ -169,7 +173,7 @@ for experiment=options.Experiments
     if ~isFocused
     fig=figure("Visible","off","Color","w", ...
         "Position",[80 80 1040 760]);
-    tiled=tiledlayout(fig,2,1,"Padding","compact");
+    tiled=tiledlayout(fig,numel(roiNames),1,"Padding","compact");
     for ri=1:numel(roiNames)
         rn=roiNames(ri);
         ax=nexttile(tiled);hold(ax,"on");
@@ -216,7 +220,7 @@ for experiment=options.Experiments
     if isFocused
         fig=figure("Visible","off","Color","w", ...
             "Position",[80 80 1080 780]);
-        t=tiledlayout(fig,2,1,"Padding","compact", ...
+        t=tiledlayout(fig,numel(roiNames),1,"Padding","compact", ...
             "TileSpacing","compact");
         for ri=1:numel(roiNames)
             rn=roiNames(ri);
@@ -264,7 +268,7 @@ for experiment=options.Experiments
     if isequal(arms,fiveArms)
         fig=figure("Visible","off","Color","w", ...
             "Position",[80 80 1040 760]);
-        t=tiledlayout(fig,2,1,"Padding","compact");
+        t=tiledlayout(fig,numel(roiNames),1,"Padding","compact");
         for ri=1:numel(roiNames)
             rn=roiNames(ri);
             ax=nexttile(t);hold(ax,"on");
@@ -349,7 +353,9 @@ end
 end
 
 function R=ordered(T,roi,model,frequencies)
-R=T(string(T.name)==roi & string(T.model)==model,:);
+mask=strcmp(string(T.name(:)),roi) & ...
+    strcmp(string(T.model(:)),model);
+R=T(mask,:);
 R=sortrows(R,"frequency_hz");
 assert(height(R)==numel(frequencies) && ...
     isequal(double(R.frequency_hz),frequencies'), ...

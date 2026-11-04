@@ -343,3 +343,156 @@ four-arm 2×2 contrasts, and adds
 `candidate10_filtered_vs_reduced_roi_mean` to compare Candidate10
 with Reduced14 and Reduced16 **under identical filtering**.
 The four-, seven-, and nine-arm analyses remain unchanged.
+
+
+## Central homogeneous ROI, versioned analysis (2026-11-04)
+
+New ROI policy:
+
+| Phantom | ROI | Center [x,z] mm | Size [width,height] mm |
+| --- | --- | --- | --- |
+| Homogeneous 5% / 10% SP | central | [18,18] | [16,14] |
+| Double-layer SP | ROI1 (soft) | [18,10] | [10,5] |
+| Double-layer SP | ROI2 (hard) | [18,25] | [10,5] |
+
+The homogeneous central rectangle spans x=10–26 and z=11–25 mm.
+All arms share the same physical ROI. The earlier two-ROI sections above
+describe historical analyses; the updated analysis/plot functions use
+sp_comparison_rois(experiment), supporting one or two ROIs per phantom.
+
+New analyses end in _central_homo_v2 (e.g.,
+reqml_sp_compare_m2_0p8_8_v1_reduced14_5arms_v1_central_homo_v2);
+the old tables and plots remain intact. Existing inference files are reused.
+
+~~~matlab
+five=["A_raw_v1","reduced14","B_filtered_v1", ...
+    "reduced14_filtered","candidate10_filtered"];
+result=run_analysis(Arms=five,MakeComparisonPlots=true);
+disp(result.summary)
+~~~
+
+The rectangle is nominal and valid map coverage may differ by frequency.
+Inspect selected_pixels, valid_fraction and actual selected extents for
+formal frequency consistency. The RSWE analogue is documented at
+../reqml_rswe_comparison/README.md.
+
+
+### Matched bilayer pixel support (2026-11-04, revision)
+
+The previous 10×5 mm bilayer ROIs were unevenly cropped at 300 Hz.
+The current geometry, applied to both SP and RSWE, is:
+
+| ROI | Center [x,z] mm | Size [width,height] mm | Physical extent (mm) |
+| --- | --- | --- | --- |
+| ROI1 (soft) | [18,11.5] | [16.2,2.0] | x=9.9–26.1, z=10.5–12.5 |
+| ROI2 (hard) | [18,24.2] | [16.2,2.0] | x=9.9–26.1, z=23.2–25.2 |
+
+The ROIs are wider laterally and thinner axially. On the measured
+SP analysis-grid lattice (approximately 0.4053 mm/step), each
+rectangle is **predicted** to include 40×5 = 200 map centers for each
+frequency from 300 to 600 Hz, if the full rectangle remains inside
+the map support. Grid phase may shift by half a sample between frequencies,
+so identical counts do not mean identical sampling coordinates.
+
+The analysis now checks **both ROIs, all frequencies and all arms** for
+equal selected pixel counts. It reports unequal usable pixel counts
+caused by model valid masks. Any selected-count mismatch stops the
+analysis with an explicit error, rather than producing misleading
+frequency curves. Always review the selected physical extents.
+
+Results now use the analysis suffix _matched_bilayer_v3, keeping
+the prior _central_homo_v2 and original two-ROI outputs intact.
+No processing or estimation needs to be rerun.
+
+
+### Centered bilayer ROI revision and one-ROI plotting correction (2026-11-04)
+
+The **current** bilayer ROIs supersede the older positions described in the
+historical sections above. Both SP and RSWE use the following same-sized,
+interior rectangles:
+
+| ROI | Center [x,z] mm | Size [width,height] mm | Physical extent (mm) |
+| --- | --- | --- | --- |
+| ROI1 (soft) | [19,15] | [14.2,2.4] | x=11.9–26.1, z=13.8–16.2 |
+| ROI2 (hard) | [19,22.5] | [14.2,2.4] | x=11.9–26.1, z=21.3–23.7 |
+
+This moves ROI1 upward and ROI2 downward, away from the image and layer
+boundaries visible in the 300 Hz bilayer map. The nominal pixel count is
+**estimated** at 35×6 = 210 per rectangle on the observed ~0.4053 mm
+SP sampling lattice; this is not a substitute for the actual per-frequency
+assertion. The map boundaries, valid-mask coverage, selected pixel counts,
+and physical extents must still be checked in the output CSV for every arm.
+
+The homogeneous phantom still uses **one** central ROI at [18,18] mm,
+size [16,14] mm. Comparison plotting now iterates ROI names as scalar
+strings and allocates **two panels** (SWS and spatial CV) even when the
+experiment has only one ROI. This fixes the reported MATLAB dimension
+mismatch in `plot_model_comparison` and the one-ROI tile-layout problem.
+
+The new output suffix is `_centered_bilayer_v4`. No new processing or
+REQ-ML prediction is required: rerun `run_analysis(Arms=five,
+MakeComparisonPlots=true)` after pulling the change.
+
+
+### Final interior bilayer ROIs (SP and RSWE)
+
+The current ROI definitions **supersede earlier ROI positions above**.
+They are intended to sample the flatter interiors of both layers, away
+from the interlayer transition visible in the 300/600 Hz SP maps:
+
+| ROI | Center [x,z] mm | Size [width,height] mm | Physical extent (mm) |
+| --- | --- | --- | --- |
+| ROI1 soft | [19,13] | [14.2,3.2] | x=11.9–26.1, z=11.4–14.6 |
+| ROI2 hard | [19,24] | [14.2,3.2] | x=11.9–26.1, z=22.4–25.6 |
+
+These ranges approximate the requested z=11–15 mm and z=22–26 mm
+while leaving some outer-map margin at 300 Hz. They are 3.2 mm tall,
+slightly shorter than those requested ranges to avoid sampling the
+very edge. For the approximate 0.4053 mm SP grid, about **35×8 = 280**
+selected centers per ROI are expected, **not guaranteed**. The existing
+assertion checks actual selected pixel counts across every frequency,
+model arm, and both ROIs; model-specific valid-mask counts are tracked
+separately. A new analysis suffix `_interior_bilayer_v5` preserves
+historical analysis outputs. The homogeneous central ROI stays unchanged.
+
+Run only `run_analysis(Arms=five,MakeComparisonPlots=true)` using frozen
+estimates; no new processing or REQ predictions are necessary.
+
+
+### Enlarged and centered homogeneous ROI (latest)
+
+For **both 5% and 10% homogeneous SP**, the old 16×14 mm ROI
+centered at [18,18] mm has been superseded by one fixed rectangle:
+
+- **Center [x,z] = [19,19.25] mm**.
+- **Size [width,height] = [17,15] mm** (area 255 mm² vs. 224 mm²).
+- Extent **x=10.5–27.5 mm, z=11.75–26.75 mm**.
+
+This centers the ROI on the common 300 Hz image extent visible in the
+10% SP map, leaving a modest border margin, and applies identically to
+5% SP. The same policy is shared by the RSWE experiment ROIs, but must
+be visually validated there. The current SP analysis-name suffix is
+`_interior_bilayer_v5_homo_centered_large_v2`. Bilayer ROIs remain
+unchanged from the immediately previous revision. Re-run analysis/plots
+only; frozen model estimates and processing are reused.
+
+
+### ROI2 grid-phase alignment at 600 Hz
+
+The previous hard ROI at z=22.4–25.6 mm had 280 selected pixels at
+300/400/500 Hz but **245** at 600 Hz (35 columns × 7 rows), triggering
+`assertEqualBilayerPixelCounts`. Historical SP map statistics indicate
+an axial step ~0.405263 mm with a half-step grid phase difference at
+600 Hz: the top included sample would be z≈25.632895 mm, just outside
+the old z=25.6 mm bound. This is a sampled-grid boundary mismatch,
+not evidence that the model invalidated 35 pixels.
+
+The hard ROI center is now **[19,24.1] mm**, size **[14.2,3.2] mm**,
+with z-range **22.5–25.7 mm**. On the known SP grid phases it contains
+8 axial rows at both 300–500 Hz and 600 Hz, matching ROI1's 280
+selected pixels. The actual full-frequency/model assertion is still
+mandatory. Soft and homogeneous ROIs are unchanged.
+
+The latest SP analysis-name suffix is
+`_interior_bilayer_v6_homo_centered_large_v2` so earlier outputs
+remain available; processing/estimation need not be repeated.

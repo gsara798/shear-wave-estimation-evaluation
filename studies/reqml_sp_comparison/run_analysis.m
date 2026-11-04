@@ -21,13 +21,11 @@ end
 function T=analyzeAll(o,c)
 assert(~isempty(which("swseval.analyzeSweep")), ...
     "SPCompare:SWSEval","swseval src not accessible.");
-rois=[swseval.roi.rectangle("ROI1",Center=[18 10], ...
-        Size=[10 5],Units="mm"), ...
-      swseval.roi.rectangle("ROI2",Center=[18 25], ...
-        Size=[10 5],Units="mm")];
+
 parts=cell(numel(o.Experiments),1);
 for i=1:numel(o.Experiments)
     experiment=o.Experiments(i);
+    rois=sp_comparison_rois(experiment);
     root=fullfile(o.DataRoot,experiment);
     estimateRoot=fullfile(root,"estimates",c.comparisonName);
     analysisRoot=fullfile(root,"analysis",c.analysisName);
@@ -39,6 +37,12 @@ for i=1:numel(o.Experiments)
         SWSColorLimits=[1 4],FrequencyYLim=[1 4], ...
         ContinueOnMissing=false,ExportMaps=true, ...
         PlotCombinedM=false,YDecimals=2);
+    if contains(experiment,"_dl_")
+        % Enforce equal nominal pixel counts across model arms and frequencies.
+        % Valid-mask differences are reported separately, never hidden.
+        swseval.metrics.assertEqualBilayerPixelCounts(tab, ...
+            string({rois.name}),c.arms,o.Frequencies);
+    end
     tab.experiment=repmat(experiment,height(tab),1);
     tab=movevars(tab,"experiment","Before",1);
     if any(tab.selected_pixels==0)
