@@ -475,3 +475,24 @@ be visually validated there. The current SP analysis-name suffix is
 `_interior_bilayer_v5_homo_centered_large_v2`. Bilayer ROIs remain
 unchanged from the immediately previous revision. Re-run analysis/plots
 only; frozen model estimates and processing are reused.
+
+
+### ROI2 grid-phase alignment at 600 Hz
+
+The previous hard ROI at z=22.4–25.6 mm had 280 selected pixels at
+300/400/500 Hz but **245** at 600 Hz (35 columns × 7 rows), triggering
+`assertEqualBilayerPixelCounts`. Historical SP map statistics indicate
+an axial step ~0.405263 mm with a half-step grid phase difference at
+600 Hz: the top included sample would be z≈25.632895 mm, just outside
+the old z=25.6 mm bound. This is a sampled-grid boundary mismatch,
+not evidence that the model invalidated 35 pixels.
+
+The hard ROI center is now **[19,24.1] mm**, size **[14.2,3.2] mm**,
+with z-range **22.5–25.7 mm**. On the known SP grid phases it contains
+8 axial rows at both 300–500 Hz and 600 Hz, matching ROI1's 280
+selected pixels. The actual full-frequency/model assertion is still
+mandatory. Soft and homogeneous ROIs are unchanged.
+
+The latest SP analysis-name suffix is
+`_interior_bilayer_v6_homo_centered_large_v2` so earlier outputs
+remain available; processing/estimation need not be repeated.

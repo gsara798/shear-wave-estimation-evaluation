@@ -182,3 +182,15 @@ from the 300 Hz 10% SP map, so inspect actual 5% and RSWE coverage before
 using final statistics. Bilayer ROIs are unchanged. The current RSWE
 analysis suffix is `_interior_bilayer_v4_homo_centered_large_v2`.
 Re-run analysis/plots only; existing frozen predictions are reused.
+
+
+## Bilayer hard ROI grid-phase adjustment (latest)
+
+To resolve a verified SP 600 Hz selected-count mismatch, ROI2 hard
+center moves from [19,24] to **[19,24.1] mm**, retaining size
+[14.2,3.2] mm and extent z=22.5–25.7 mm. SP's 300/600 Hz lattice
+phases predict 8 rows in both cases. RSWE may have a different grid
+phase and must pass the real-data `assertEqualBilayerPixelCounts`.
+ROI1 soft and both homogeneous ROIs are unchanged. New RSWE analysis
+suffix: `_interior_bilayer_v5_homo_centered_large_v2`. Saved
+wavefields/predictions are reused.

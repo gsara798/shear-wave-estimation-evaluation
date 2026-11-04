@@ -31,7 +31,7 @@ for rois={sp_comparison_rois("2026Feb27_dl_sp"), ...
     verifyEqual(testCase,numel(r),2);
     verifyEqual(testCase,string({r.name}),["ROI1","ROI2"]);
     verifyEqual(testCase,r(1).center,[19 13]);
-    verifyEqual(testCase,r(2).center,[19 24]);
+    verifyEqual(testCase,r(2).center,[19 24.1]);
     verifyEqual(testCase,r(1).size,[14.2 3.2]);
     verifyEqual(testCase,r(2).size,[14.2 3.2]);
 end
@@ -44,7 +44,7 @@ c=sp_comparison_config(ReqmlRoot=repo,EwpRoot=repo,EvalRoot=repo, ...
         "reduced14_filtered","candidate10_filtered"]);
 verifyEqual(testCase,c.comparisonName,"reqml_sp_compare_m2_0p8_8_v1");
 verifyTrue(testCase,endsWith(c.analysisName, ...
-    "_reduced14_5arms_v1_interior_bilayer_v5_homo_centered_large_v2"));
+    "_reduced14_5arms_v1_interior_bilayer_v6_homo_centered_large_v2"));
 verifyEqual(testCase,c.M,2);
 verifyEqual(testCase,c.StepPixels,2);
 end
@@ -67,7 +67,7 @@ verifyEqual(testCase,c.StepPixels,2);
 verifyEqual(testCase,c.Frequencies,[300 400 500 600]);
 verifyEqual(testCase,c.comparisonName,"reqml_rswe_compare_m2_0p8_8_v1");
 verifyTrue(testCase,endsWith(c.analysisName, ...
-    "_reduced14_5arms_v1_interior_bilayer_v4_homo_centered_large_v2"));
+    "_reduced14_5arms_v1_interior_bilayer_v5_homo_centered_large_v2"));
 verifyNotEqual(testCase,c.comparisonName, ...
     "reqml_sp_compare_m2_0p8_8_v1");
 end
@@ -98,4 +98,20 @@ T.selected_pixels(2)=275;
 verifyError(testCase,@() swseval.metrics.assertEqualBilayerPixelCounts( ...
     T,["ROI1","ROI2"],"reduced14",[300 600]), ...
     "swseval:InconsistentROIPixels");
+end
+
+
+function testHardROISelectedRowsOnObservedSPGridPhases(testCase)
+% Regression from historical 300 and 600 Hz SP map-grid offsets.
+% This numerical check supplements, not replaces, the real-data assertion.
+r=sp_comparison_rois("2026Feb27_dl_sp");
+hard=r(2);
+dz=0.405263157894737;
+phaseStarts=[22.5934210526317 22.796052631579];
+for k=1:numel(phaseStarts)
+    z=phaseStarts(k)+(-10:20)*dz;
+    zmin=hard.center(2)-hard.size(2)/2;
+    zmax=hard.center(2)+hard.size(2)/2;
+    verifyEqual(testCase,nnz(z>=zmin & z<=zmax),8);
+end
 end
