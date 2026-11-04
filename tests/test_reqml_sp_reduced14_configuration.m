@@ -56,6 +56,22 @@ verifyEqual(testCase,full.modelPaths(1:7),legacy.modelPaths);
 verifyEqual(testCase,full.inputKinds(1:7),legacy.inputKinds);
 end
 
+function testFourArmFeatureFilterComparisonIsIsolated(testCase)
+repo=testCase.TestData.repo;
+c=sp_comparison_config(ReqmlRoot=repo,EvalRoot=repo,EwpRoot=repo, ...
+    Arms=["A_raw_v1","reduced14","B_filtered_v1","reduced14_filtered"]);
+verifyEqual(testCase,c.arms,c.fourArms);
+verifyEqual(testCase,numel(c.arms),4);
+verifyEqual(testCase,c.inputKinds,["raw","raw","filtered","filtered"]);
+verifyEqual(testCase,c.modelPaths, ...
+    [c.v1;c.reduced14Bundle;c.v1;c.reduced14Bundle]);
+verifyTrue(testCase,endsWith(c.analysisName,"reduced14_4arms_v1"));
+verifyNotEqual(testCase,c.analysisName,c.comparisonName);
+verifyEqual(testCase,c.M,2);
+verifyEqual(testCase,c.StepPixels,2);
+verifyEqual(testCase,c.Frequencies,[300 400 500 600]);
+end
+
 function testInvalidArmSelectionsRejected(testCase)
 repo=testCase.TestData.repo;
 verifyError(testCase,@() sp_comparison_config( ...
