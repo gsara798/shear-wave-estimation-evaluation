@@ -1,5 +1,5 @@
 function output = plot_model_comparison(options)
-%PLOT_MODEL_COMPARISON Comparative experimental SWS plots for 4, 7, or 9 arms.
+%PLOT_MODEL_COMPARISON Comparative experimental SWS plots for 4, 5, 7, or 9 arms.
 %
 %   output=plot_model_comparison();
 %
@@ -41,9 +41,10 @@ allLabels=["A | reduced16 raw", "B | reduced16 filtered", ...
     "reduced14 raw", "reduced14 filtered (transfer)"];
 arms=options.Arms;
 fourArms=["A_raw_v1","reduced14","B_filtered_v1","reduced14_filtered"];
-assert(isequal(arms,legacyArms) || isequal(arms,allArms) || ...
-    isequal(arms,fourArms), ...
-    "SPCompare:PlotsArms","Expect controlled four, frozen seven, or complete nine-arm comparison.");
+fiveArms=[fourArms,"candidate10_filtered"];
+isFocused=isequal(arms,fourArms) || isequal(arms,fiveArms);
+assert(isequal(arms,legacyArms) || isequal(arms,allArms) || isFocused, ...
+    "SPCompare:PlotsArms","Expect focused four/five or frozen seven/nine-arm comparison.");
 positions=zeros(1,numel(arms));
 for k=1:numel(arms)
     positions(k)=find(allArms==arms(k),1);
@@ -54,6 +55,8 @@ if analysisName=="",analysisName=options.ComparisonName;end
 armTag=string(numel(arms))+"arms";
 if numel(arms)==4
     mapTag="four";
+elseif numel(arms)==5
+    mapTag="five";
 elseif numel(arms)==7
     mapTag="seven";
 else
@@ -130,7 +133,7 @@ for experiment=options.Experiments
     end
 
     % Historical A/B/C contrasts are defined only for the seven/nine-arm set.
-    if numel(arms)~=4
+    if ~isFocused
     % Paired change in ROI mean (NO SWS accuracy claim without truth).
     fig=figure("Visible","off","Color","w", ...
         "Position",[80 80 1040 760]);
@@ -163,7 +166,7 @@ for experiment=options.Experiments
 
     % Additional paired contrasts: only the spatial filter changes for
     % each historical candidate. These are changes in SWS, not accuracy.
-    if numel(arms)~=4
+    if ~isFocused
     fig=figure("Visible","off","Color","w", ...
         "Position",[80 80 1040 760]);
     tiled=tiledlayout(fig,2,1,"Padding","compact");
@@ -210,7 +213,7 @@ for experiment=options.Experiments
 
     % Controlled 2x2: same two frozen models, with and without filtering.
     % All contrasts are paired ROI SWS changes, not errors against truth.
-    if numel(arms)==4
+    if isFocused
         fig=figure("Visible","off","Color","w", ...
             "Position",[80 80 1080 780]);
         t=tiledlayout(fig,2,1,"Padding","compact", ...
@@ -252,6 +255,43 @@ for experiment=options.Experiments
             "Interpreter","none");
         output=[output;export(fig, ...
             fullfile(figDir,"feature_filter_2x2_roi_mean"), ...
+            options.SavePDF)]; %#ok<AGROW>
+        close(fig);
+    end
+
+    % Candidate10 is an external filtered-input benchmark, not part of
+    % the matched Reduced16/Reduced14 2x2 ablation.
+    if isequal(arms,fiveArms)
+        fig=figure("Visible","off","Color","w", ...
+            "Position",[80 80 1040 760]);
+        t=tiledlayout(fig,2,1,"Padding","compact");
+        for ri=1:numel(roiNames)
+            rn=roiNames(ri);
+            ax=nexttile(t);hold(ax,"on");
+            filtered16=ordered(S,rn,"B_filtered_v1",options.Frequencies);
+            filtered14=ordered(S,rn,"reduced14_filtered",options.Frequencies);
+            candidate=ordered(S,rn,"candidate10_filtered",options.Frequencies);
+            plot(ax,options.Frequencies, ...
+                double(candidate.mean_sws-filtered16.mean_sws),"-o", ...
+                "LineWidth",1.6, ...
+                "DisplayName","candidate10 - reduced16 | filtered");
+            plot(ax,options.Frequencies, ...
+                double(candidate.mean_sws-filtered14.mean_sws),"-s", ...
+                "LineWidth",1.6, ...
+                "DisplayName","candidate10 - reduced14 | filtered");
+            yline(ax,0,"k:");
+            ylabel(ax,"Change in ROI mean SWS (m/s)");
+            xlabel(ax,"Frequency (Hz)");
+            title(ax,rn,"Interpreter","none");
+            xticks(ax,options.Frequencies);grid(ax,"on");
+            if ri==1
+                legend(ax,"Location","best","Interpreter","none");
+            end
+        end
+        title(t,experiment+" | filtered-input candidate10 benchmark", ...
+            "Interpreter","none");
+        output=[output;export(fig, ...
+            fullfile(figDir,"candidate10_filtered_vs_reduced_roi_mean"), ...
             options.SavePDF)]; %#ok<AGROW>
         close(fig);
     end
