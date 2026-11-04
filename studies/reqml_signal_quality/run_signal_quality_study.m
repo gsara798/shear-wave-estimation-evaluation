@@ -9,6 +9,7 @@ arguments
         ["2026Feb27_homo_5perc_rswe","2026Feb27_homo_5perc_sp"]
     options.Frequencies (1,:) double {mustBePositive} = [300 400 500 600]
     options.EstimationRun (1,1) string = "reqml_sp_compare_m2_0p8_8_v1"
+    options.EstimationRuns string = string.empty(1,0)
     options.Arm (1,1) string = "reduced14_filtered"
     options.M (1,1) double {mustBePositive} = 2
     options.QualityRun (1,1) string = "quality_hotspot_check"
@@ -24,6 +25,16 @@ arguments
     options.ExportFigures (1,1) logical = true
 end
 
+% The RSWE and SP estimates may have been saved under different run names.
+% Explicit per-experiment names prevent silently comparing another run.
+if ~isempty(options.EstimationRuns)
+    assert(isvector(options.EstimationRuns) && ...
+        numel(options.EstimationRuns)==numel(options.Experiments) && ...
+        all(strlength(options.EstimationRuns)>0), ...
+        "swseval:EstimationRuns", ...
+        "EstimationRuns must contain one nonempty run name per experiment.");
+end
+
 root=string(fileparts(mfilename("fullpath")));
 evalSrc=fullfile(root,"..","..","src");
 if isempty(which("swseval.signalquality.loadAndAlign"))
@@ -31,11 +42,16 @@ if isempty(which("swseval.signalquality.loadAndAlign"))
 end
 summaryRows=table();metricRows=table();gateRows=table();
 missing=strings(0,1);
-for experiment=options.Experiments
+for ei=1:numel(options.Experiments)
+    experiment=options.Experiments(ei);
+    estimationRun=options.EstimationRun;
+    if ~isempty(options.EstimationRuns)
+        estimationRun=options.EstimationRuns(ei);
+    end
     experimentRoot=fullfile(options.DataRoot,experiment);
     for frequency=options.Frequencies
         stem=sprintf("test1_%gHz",frequency);
-        estimateFile=fullfile(experimentRoot,"estimates",options.EstimationRun, ...
+        estimateFile=fullfile(experimentRoot,"estimates",estimationRun, ...
             "REQ-ML",options.Arm,sprintf("%gHz",frequency), ...
             "M"+string(options.M),"reqml_result.mat");
         diagnosis=fullfile(experimentRoot,"analysis",options.QualityRun);

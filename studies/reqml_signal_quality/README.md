@@ -81,6 +81,32 @@ roi=swseval.roi.rectangle("central",Center=[19 19.25], ...
 out=run_signal_quality_study(ROIs=roi,ExportFigures=false);
 ```
 
+### RSWE and SP estimates saved under different run names
+
+The default `EstimationRun` is the SP study run. If RSWE predictions were
+saved under another run, locate them before running the combined study:
+
+```matlab
+rsweRoot=fullfile(dataRoot,"2026Feb27_homo_5perc_rswe");
+d=dir(fullfile(rsweRoot,"estimates","**","reqml_result.mat"));
+paths=string(fullfile({d.folder},{d.name}));
+disp(paths(contains(paths,"reduced14_filtered") & contains(paths,"M2"))')
+```
+
+Use the directory name immediately after `estimates/` from the confirmed
+RSWE paths. `EstimationRuns` must follow the order of `Experiments`:
+
+```matlab
+out=run_signal_quality_study( ...
+    Experiments=["2026Feb27_homo_5perc_rswe", ...
+                 "2026Feb27_homo_5perc_sp"], ...
+    EstimationRuns=["<confirmed_RSWE_run_name>", ...
+                    "reqml_sp_compare_m2_0p8_8_v1"]);
+```
+
+Do not choose a different model or run automatically when more than one
+estimate exists; the source and model must match the intended comparison.
+
 You may add `"2026Feb27_homo_10perc_sp"` to the experiments, but verify
 that the ROI lies in the intended homogeneous interior. The study never
 guesses a reference SWS or a different ROI for that acquisition.
