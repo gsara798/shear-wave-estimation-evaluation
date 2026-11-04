@@ -160,3 +160,108 @@ The migration copies the **same implementation** used by the former
 the controller into stage-specific files. Only the entry points and
 code organization change; the experiment paths and frozen parameters remain
 unchanged. **MATLAB execution has not yet been verified** here.
+
+## Reduced14 transfer: raw and filtered SP comparison (2026-11-04)
+
+This extension adds two **opt-in** inference arms to the original seven;
+all pre-existing seven-arm estimates and analysis outputs retain their
+original paths:
+
+| Arm | Input wavefield | Fitted model | Interpretation |
+| --- | --- | --- | --- |
+| `reduced14` | Existing `reqml_compare_raw_no_spatial_v1` | Same Q0-v5 Reduced14 train-210 bundle | Matched to unfiltered training preprocessing |
+| `reduced14_filtered` | Existing `reqml_compare_global_donut_0p8_8_v1` | **The same unfiltered-trained Reduced14 bundle** | Exploratory filter-transfer sensitivity; **not** retrained with filtering |
+
+Reduced14 removes `ecum_increment_entropy` and
+`srad_proxy_centroid_k_norm` from Reduced16. The new bundle comes from
+the frozen 210-training-geometry validation checkpoint; there is no
+new independent TEST claim for this version. Before inference, export
+the checkpoint in the REQ-ML checkout with:
+
+~~~matlab
+cd("/Users/sara/local/req-ml")
+addpath(fullfile(pwd,"training","q0_v5_clean_campaign"),"-begin")
+export_q0_v5_reduced14_transfer(Mode="plan"); % read-only identity check
+bundle=export_q0_v5_reduced14_transfer(Mode="run");
+~~~
+
+This must produce
+`training/q0_v5_clean_campaign/outputs/reduced14_transfer_bundle_v1/model_bundle.mat`
+in REQ-ML. It does **not** refit the model or change `models/current`.
+
+### Run only the two new models
+
+The SP datasets already processed for the original comparison have
+three experiments and four frequencies. **No IQ/Loupas/EWP processing
+or spatial filtering needs to be repeated.** At M=2, StepPixels=2:
+
+~~~matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+addpath(fullfile(pwd,"src"),"-begin")
+addpath(fullfile(pwd,"studies","reqml_sp_comparison"),"-begin")
+clear sp_comparison_config run_estimation run_analysis run_plots ...
+    plot_model_comparison
+rehash
+
+% Single-phantom pilot: 2 arms x 4 frequencies = 8 new estimates.
+pilot=run_estimation( ...
+    Experiments="2026Feb27_dl_sp", ...
+    Arms=["reduced14","reduced14_filtered"], ...
+    UseParallel=false);
+
+% Complete 3 phantoms x 4 frequencies x 2 arms = 24 estimates.
+% The 8 pilot estimates are validated and resumed.
+new=run_estimation( ...
+    Arms=["reduced14","reduced14_filtered"], ...
+    UseParallel=true);
+~~~
+
+The new estimates are placed under the **existing**
+`<experiment>/estimates/reqml_sp_compare_m2_0p8_8_v1/REQ-ML/`
+root, but in separate `reduced14` and `reduced14_filtered` folders.
+The same existing raw and global-donut wavefields are reused.
+The estimate identity includes source/model file fingerprints and
+`StepPixels`; incompatible existing files are not replaced.
+
+### Analyze all nine arms without replacing the seven-arm results
+
+~~~matlab
+legacy=["A_raw_v1","B_filtered_v1","C_filtered_v2", ...
+    "candidate10","candidate", ...
+    "candidate10_filtered","candidate_filtered"];
+allNine=[legacy,"reduced14","reduced14_filtered"];
+
+results=run_analysis(Arms=allNine,MakeComparisonPlots=true);
+disp(results.summary)
+
+% Regenerate nine-arm figures without new predictions:
+figures=run_plots(Arms=allNine);
+~~~
+
+The original **estimate** study name is preserved, while nine-arm
+**analysis** is isolated to
+`reqml_sp_compare_m2_0p8_8_v1_reduced14_9arms_v1`.
+The original seven-arm CSVs and figures stay untouched.
+Nine-arm outputs contain per-phantom ROI statistics, frequency plots
+of mean SWS ± spatial SD and CV, nine-map montages, and a paired
+filtered-minus-raw Reduced14 ROI-mean curve alongside candidate models.
+
+The pre-existing ROIs are fixed at centers [18,10] and [18,25] mm
+with 10×5 mm rectangles. Check that they correspond to the intended
+tissue region in each phantom.
+
+**Scientific caveat:** a flatter SWS-frequency curve and lower spatial
+CV are not sufficient to establish accuracy without an independent
+experimental SWS reference. In particular, comparing
+`reduced14_filtered` with `reduced14` measures the impact of
+applying the donut to a raw-trained model; it does **not** validate a
+model trained with a filtered feature distribution.
+
+Configuration-only MATLAB tests:
+
+~~~matlab
+runtests("tests/test_reqml_sp_reduced14_configuration.m")
+~~~
+
+The validation and inference stages require the saved files on the
+user's Mac; they have not been executed by this repository change.
