@@ -39,6 +39,10 @@ verifyEqual(testCase,S.correct_rejection_fraction,zeros(3,1));
 verifyEqual(testCase,S.high_error_rejection_fraction,ones(3,1));
 verifyEqual(testCase,height(W),3);
 verifyEqual(testCase,nnz(W.high_error),1);
+verifySize(testCase,W.x_mm,[3 1]);
+verifySize(testCase,W.z_mm,[3 1]);
+verifyEqual(testCase,W.x_mm,[10;10;11]);
+verifyEqual(testCase,W.z_mm,[20;21;20]);
 end
 
 function testFalseRejectionIsReported(testCase)
