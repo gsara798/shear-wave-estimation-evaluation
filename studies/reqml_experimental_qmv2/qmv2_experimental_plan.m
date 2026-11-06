@@ -25,7 +25,7 @@ for i=1:numel(C.cases)
     id=string(item.id);
     if ~ismember(id,selectedCases),continue,end
     root=fullfile(C.data_root,string(item.relative_path));
-    [frequencies,run,runCandidates]=discoverCase(item,root);
+    [frequencies,run,runCandidates]=discoverCase(item,root,C.filtered_run);
     if isempty(frequencies)
         rows{end+1,1}=table(id,string(item.modality),string(item.type), ...
             NaN,root,run,runCandidates, ...
@@ -62,7 +62,7 @@ if isfield(C,"model_bundles") && isfield(C.model_bundles,char(arm))
     kind=string(entry.input_kind);
     assert(ismember(kind,["raw","donut"]), ...
         "ExpQMV2:InputKind","Custom model input kind must be raw or donut.");
-    if ~startsWith(path,["/","~"]) && ~contains(path,":\")
+    if ~any(startsWith(path,["/","~"])) && ~contains(path,":\")
         path=fullfile(repo,path);
     end
     return
@@ -95,7 +95,7 @@ path=fullfile(repo,"training","quality_mask_v2_campaign", ...
     "transfer_bundles_v1",subset,"model_bundle.mat");
 end
 
-function [frequencies,run,candidates]=discoverCase(item,root)
+function [frequencies,run,candidates]=discoverCase(item,root,filteredRun)
 run=string(item.raw_run);
 frequencies=double(item.frequencies_hz(:))';
 % Support datasets with unknown frequency lists by inspecting recorded Hz
@@ -125,7 +125,9 @@ if isfolder(processedDir)
     dirs=dirs(~ismember(string({dirs.name}),[".",".."]));
     for j=1:numel(dirs)
         candidate=string(dirs(j).name);
-        if candidate==run || candidate=="" || candidate==string(item.id)
+        if candidate==run || candidate=="" || ...
+                candidate==string(item.id) || ...
+                candidate==filteredRun || contains(candidate,"donut")
             continue
         end
         if candidate=="" ,continue,end
