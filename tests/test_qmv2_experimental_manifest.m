@@ -27,7 +27,7 @@ verifyEqual(tc,C.filter.cs_min_m_s,0.8);
 verifyEqual(tc,C.filter.cs_max_m_s,8);
 end
 
-function testFixedROIFromPriorStudyAndInclusionIsUnsegmented(tc)
+function testFixedROIsAndConfiguredInclusionPairs(tc)
 C=read_qmv2_experiment_manifest(tc.TestData.manifest);
 s=C.cases(1);
 verifyEqual(tc,string(s.type),"bilayer");
@@ -37,8 +37,25 @@ verifyEqual(tc,reshape(double(s.rois(2).center_mm),1,[]),[19 24.1]);
 verifyEqual(tc,reshape(double(s.rois(1).size_mm),1,[]),[14.2 3.2]);
 verifyEqual(tc,reshape(double(s.rois(2).size_mm),1,[]),[14.2 3.2]);
 ids=string({C.cases.id});
-verifyEmpty(tc,C.cases(ids=="2026Feb19_inc_sp").rois);
-verifyEmpty(tc,C.cases(ids=="2026Feb19_inc_rswe").rois);
+for id=["2026Feb19_inc_sp","2026Feb19_inc_rswe"]
+    inc=C.cases(ids==id);
+    rois=inc.rois;
+    verifyEqual(tc,string({rois.name}), ...
+        ["inclusion_core","inclusion_large","background_ref"]);
+    verifyEqual(tc,reshape(double(rois(1).center_mm),1,[]), ...
+        [19.5 24.5]);
+    verifyEqual(tc,reshape(double(rois(1).size_mm),1,[]),[8 8]);
+    verifyEqual(tc,reshape(double(rois(2).center_mm),1,[]), ...
+        [19.5 24.5]);
+    verifyEqual(tc,reshape(double(rois(2).size_mm),1,[]),[12 12]);
+    verifyEqual(tc,reshape(double(rois(3).center_mm),1,[]), ...
+        [28 13.5]);
+    verifyEqual(tc,reshape(double(rois(3).size_mm),1,[]),[6 6]);
+    verifyEqual(tc,string({inc.contrasts.name}), ...
+        ["core_vs_background","large_vs_background"]);
+    verifyEqual(tc,string({inc.contrasts.reference_roi}), ...
+        ["background_ref","background_ref"]);
+end
 end
 
 function testFivePercentUsesSamePublishedHomogeneousROI(tc)
@@ -75,7 +92,7 @@ verifyTrue(tc,endsWith(models.bundle_file(2), ...
         "expanded20_frequency","model_bundle.mat")));
 verifyTrue(tc,all(jobs.case_id=="2026Feb19_inc_rswe"));
 verifyTrue(tc,all(jobs.modality=="rswe"));
-verifyTrue(tc,all(~jobs.rois_defined));
+verifyTrue(tc,all(jobs.rois_defined));
 end
 
 function testPlanCanScopeModelsAndCases(tc)
@@ -126,6 +143,56 @@ fprintf(fid,"%s",jsonencode(C));
 fclose(fid);
 verifyError(tc,@()read_qmv2_experiment_manifest(string(path)), ...
     "ExpQMV2:Filter");
+end
+
+
+function testPairedInclusionContrastArithmeticAndPartialFovFlag(tc)
+% Pure metric test; no MATLAB installation-specific acquisition folders.
+id=repmat("test_inclusion_sp",3,1);
+mode=repmat("sp",3,1);
+phantom=repmat("inclusion",3,1);
+f=repmat(300,3,1);
+model=repmat("qmv2_unfiltered_reduced14",3,1);
+roi=["inclusion_core";"inclusion_large";"background_ref"];
+means=[3.1;2.9;2.1];
+medians=[3.0;2.9;2.0];
+sds=[0.3;0.25;0.4];
+n=[25;60;12];
+roiFraction=[1;1;0.65];
+T=table(id,mode,phantom,f,model,roi,means,medians, ...
+    sds,n,roiFraction, ...
+    'VariableNames',["case_id","modality","phantom_type", ...
+    "frequency_hz","model","roi","mean_sws_m_s", ...
+    "median_sws_m_s","spatial_sd_m_s", ...
+    "common_valid_pixels","roi_extent_in_sample_fraction"]);
+rules=struct("name",{"core_vs_background","large_vs_background"}, ...
+    "target_roi",{"inclusion_core","inclusion_large"}, ...
+    "reference_roi",{"background_ref","background_ref"});
+X=qmv2_inclusion_contrasts(T,rules);
+verifyEqual(tc,height(X),2);
+verifyEqual(tc,X.contrast_name, ...
+    ["core_vs_background";"large_vs_background"]);
+verifyEqual(tc,X.median_sws_difference_m_s(1),1,"AbsTol",1e-12);
+verifyEqual(tc,X.median_sws_ratio(1),1.5,"AbsTol",1e-12);
+verifyEqual(tc,X.median_contrast_percent(1),50,"AbsTol",1e-12);
+verifyEqual(tc,X.spatial_cnr(1),2,"AbsTol",1e-12);
+verifyEqual(tc,X.median_contrast_percent(2),45,"AbsTol",1e-12);
+verifyEqual(tc,X.reference_common_pixels(1),12);
+verifyFalse(tc,any(X.roi_pair_within_fov));
+end
+
+function testManifestRejectsOverlappingContrastROIs(tc)
+C=jsondecode(fileread(tc.TestData.manifest));
+index=find(string({C.cases.id})=="2026Feb19_inc_sp");
+C.cases(index).contrasts(1).reference_roi="inclusion_large";
+path=tempname+".json";
+fid=fopen(path,"w");
+assert(fid>=0,"ExpQMV2:TestTemp","Cannot create temporary manifest.");
+cleanup=onCleanup(@()deleteIfPresent(path)); %#ok<NASGU>
+fprintf(fid,"%s",jsonencode(C));
+fclose(fid);
+verifyError(tc,@()read_qmv2_experiment_manifest(string(path)), ...
+    "ExpQMV2:ContrastOverlap");
 end
 
 function deleteIfPresent(path)
