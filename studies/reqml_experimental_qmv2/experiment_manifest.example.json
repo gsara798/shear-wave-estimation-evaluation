@@ -348,5 +348,30 @@
       ]
     }
   ],
-  "roi_min_fov_fraction": 0.9
+  "roi_min_fov_fraction": 0.9,
+  "mask_transfer": {
+    "analysis_version": "quality_mask_transfer_r14_q_ret80_v1",
+    "mask_feature_set": "reduced14",
+    "include_frequency": false,
+    "risk_error_threshold": 0.1,
+    "target_retention": 0.8,
+    "arms": [
+      {
+        "arm": "qmv2_unfiltered_reduced14",
+        "mask_file": "training/quality_mask_v2_campaign/outputs/full_clean_plane_v2/postprocess_v1/quantile_oof_M1to3_v1/unfiltered/risk_mask_oof_v1/reduced14/spectral_reduced14_q/risk_mask_model.mat"
+      },
+      {
+        "arm": "qmv2_unfiltered_expanded20",
+        "mask_file": "training/quality_mask_v2_campaign/outputs/full_clean_plane_v2/postprocess_v1/quantile_oof_M1to3_v1/unfiltered/risk_mask_oof_v1/expanded20/spectral_reduced14_q/risk_mask_model.mat"
+      },
+      {
+        "arm": "qmv2_fixed_donut_reduced14",
+        "mask_file": "training/quality_mask_v2_campaign/outputs/full_clean_plane_v2/postprocess_v1/quantile_oof_M1to3_v1/fixed_donut/risk_mask_oof_v1/reduced14/spectral_reduced14_q/risk_mask_model.mat"
+      },
+      {
+        "arm": "qmv2_fixed_donut_expanded20",
+        "mask_file": "training/quality_mask_v2_campaign/outputs/full_clean_plane_v2/postprocess_v1/quantile_oof_M1to3_v1/fixed_donut/risk_mask_oof_v1/expanded20/spectral_reduced14_q/risk_mask_model.mat"
+      }
+    ]
+  }
 }
