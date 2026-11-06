@@ -31,8 +31,6 @@ if options.Stage=="plan"
         "selected_cases",cases,"selected_arms",arms);
     return
 end
-assert(all(models.model_present),"ExpQMV2:ModelsMissing", ...
-    "Some deployable model bundles are missing. Run Stage=plan and export from REQ-ML first.");
 if options.Stage=="process"
     ensurePaths(C,true);
     for id=cases
@@ -77,6 +75,8 @@ if options.Stage=="process"
         "next_stage","plan");
     return
 end
+assert(all(models.model_present),"ExpQMV2:ModelsMissing", ...
+    "Some deployable model bundles are missing. Run Stage=plan and export from REQ-ML first.");
 assert(all(isfinite(jobs.frequency_hz)) && ...
     all(jobs.raw_run~="") && all(jobs.raw_exists), ...
     "ExpQMV2:RawMissing", ...
@@ -316,15 +316,44 @@ assert(~isempty(rows),"ExpQMV2:NoRows","No analysis rows.");
 T=vertcat(rows{:});
 for id=unique(string(T.case_id))'
     subset=T(T.case_id==id,:);
+    spec=caseByID(C,id);
     folder=fullfile(C.data_root, ...
-        string(caseByID(C,id).relative_path), ...
+        string(spec.relative_path), ...
         "analysis",C.study_id, ...
         "M"+string(C.m)+"_step"+string(C.step_pixels), ...
         C.analysis_version);
     if ~isfolder(folder),mkdir(folder);end
+    signature=string(jsonencode(struct( ...
+        "roi_config",getROIConfig(spec), ...
+        "M",C.m,"step_pixels",C.step_pixels, ...
+        "arms",string(models.arm(:))', ...
+        "frequency_hz",unique(double(subset.frequency_hz))')));
+    sigFile=fullfile(folder,"roi_analysis_identity.mat");
+    if isfile(sigFile)
+        previous=load(sigFile,"signature");
+        assert(isfield(previous,"signature") && ...
+            string(previous.signature)==signature, ...
+            "ExpQMV2:ROIVersionConflict", ...
+            "ROI/model selection changed. Bump analysis_version in JSON; preserving %s",folder);
+    else
+        save(sigFile,"signature");
+    end
     filename=fullfile(folder,"qmv2_experimental_roi_summary.csv");
     writetable(subset,filename);
     files(end+1,1)=filename; %#ok<AGROW>
     fprintf("Experimental ROI results %s -> %s\n",id,filename);
 end
+% A combined descriptive table makes modality/phantom comparisons possible
+% without assuming identical acquisition grids or a measured ground truth.
+allRoot=fullfile(C.data_root,"analysis",C.study_id, ...
+    "M"+string(C.m)+"_step"+string(C.step_pixels),C.analysis_version);
+if ~isfolder(allRoot),mkdir(allRoot);end
+file=fullfile(allRoot,"all_experiments_roi_summary.csv");
+writetable(T,file);
+files(end+1,1)=file;
+end
+
+function roi=getROIConfig(spec)
+roi=[];
+if isfield(spec,"rois"),roi=spec.rois;end
 end
