@@ -136,9 +136,10 @@ if options.Stage=="estimate"
     return
 end
 if options.Stage=="analyze"
-    [tableRows,files]=analyzeJobs(C,jobs,models);
+    [tableRows,files,contrastRows]=analyzeJobs(C,jobs,models);
     out=struct("stage","analyze","summary",tableRows, ...
-        "files",files,"jobs",jobs,"models",models);
+        "contrasts",contrastRows,"files",files, ...
+        "jobs",jobs,"models",models);
     return
 end
 if options.Stage=="plot"
@@ -223,9 +224,10 @@ assert(ok,"ExpQMV2:EstimateWrite","%s",msg);
 status="created";
 end
 
-function [T,files]=analyzeJobs(C,jobs,models)
+function [T,files,contrasts]=analyzeJobs(C,jobs,models)
 rows=cell(0,1);
 files=strings(0,1);
+contrasts=table();
 for ji=1:height(jobs)
     j=jobs(ji,:);
     caseSpec=caseByID(C,j.case_id);
@@ -255,6 +257,7 @@ for ji=1:height(jobs)
     for ri=1:numel(roiDefs)
         def=roiDefs(ri);
         roiName=string(def.name);
+        roiFovFraction=1;
         if hasROIs
             x=double(ref.x_mm(:)');
             z=double(ref.z_mm(:));
@@ -264,6 +267,20 @@ for ji=1:height(jobs)
                 z<=center(2)+width(2)/2) & ...
                 (x>=center(1)-width(1)/2 & ...
                 x<=center(1)+width(1)/2);
+            % Geometric fraction covered by the SWS map-center grid.
+            % This is a conservative FOV diagnostic, not a pixel-fraction
+            % estimator and not an ultrasound B-mode segmentation.
+            overlapX=max(0,min(max(x),center(1)+width(1)/2)- ...
+                max(min(x),center(1)-width(1)/2));
+            overlapZ=max(0,min(max(z),center(2)+width(2)/2)- ...
+                max(min(z),center(2)-width(2)/2));
+            roiFovFraction=(overlapX/width(1))*(overlapZ/width(2));
+            if roiFovFraction<0.90
+                warning("ExpQMV2:ROIPartialFOV", ...
+                    "ROI %s in %s at %g Hz covers only %.0f%% of "+ ...
+                    "its physical extent on the SWS-map grid.", ...
+                    roiName,j.case_id,j.frequency_hz,100*roiFovFraction);
+            end
         else
             selected=true(size(common));
         end
@@ -302,13 +319,14 @@ for ji=1:height(jobs)
             rows{end+1,1}=table(j.case_id,j.modality, ...
                 j.phantom_type,j.frequency_hz,models.arm(ai),roiName, ...
                 hasROIs,referenceSpeed,nSelected,nCommon, ...
-                nCommon/max(nSelected,1), ...
+                nCommon/max(nSelected,1),roiFovFraction, ...
                 meanSWS,medianSWS,stdSWS,cv,medianQ, ...
                 biasPercent,mape, ...
                 'VariableNames',["case_id","modality","phantom_type", ...
                 "frequency_hz","model","roi","roi_configured", ...
                 "reference_sws_m_s","selected_pixels", ...
                 "common_valid_pixels","common_valid_fraction", ...
+                "roi_extent_in_sample_fraction", ...
                 "mean_sws_m_s","median_sws_m_s","spatial_sd_m_s", ...
                 "cv_percent","median_q","bias_percent","mape_percent"]); %#ok<AGROW>
         end
@@ -327,6 +345,7 @@ for id=unique(string(T.case_id))'
     if ~isfolder(folder),mkdir(folder);end
     signature=string(jsonencode(struct( ...
         "roi_config",getROIConfig(spec), ...
+        "contrasts",getContrastConfig(spec), ...
         "M",C.m,"step_pixels",C.step_pixels, ...
         "arms",string(models.arm(:))', ...
         "frequency_hz",unique(double(subset.frequency_hz))')));
@@ -344,6 +363,19 @@ for id=unique(string(T.case_id))'
     writetable(subset,filename);
     files(end+1,1)=filename; %#ok<AGROW>
     fprintf("Experimental ROI results %s -> %s\n",id,filename);
+    % Quantify ROI contrasts without processing IQ or predicting SWS.
+    if isfield(spec,"contrasts") && ~isempty(spec.contrasts)
+        localContrasts=qmv2_inclusion_contrasts(subset,spec.contrasts);
+        if isempty(contrasts)
+            contrasts=localContrasts;
+        else
+            contrasts=[contrasts;localContrasts]; %#ok<AGROW>
+        end
+        contrastFile=fullfile(folder,"qmv2_inclusion_contrasts.csv");
+        writetable(localContrasts,contrastFile);
+        files(end+1,1)=contrastFile; %#ok<AGROW>
+        fprintf("Experimental ROI contrasts %s -> %s\n",id,contrastFile);
+    end
 end
 % A combined descriptive table makes modality/phantom comparisons possible
 % without assuming identical acquisition grids or a measured ground truth.
@@ -353,6 +385,16 @@ if ~isfolder(allRoot),mkdir(allRoot);end
 file=fullfile(allRoot,"all_experiments_roi_summary.csv");
 writetable(T,file);
 files(end+1,1)=file;
+if ~isempty(contrasts)
+    file=fullfile(allRoot,"all_inclusion_contrasts.csv");
+    writetable(contrasts,file);
+    files(end+1,1)=file;
+end
+end
+
+function contrasts=getContrastConfig(spec)
+contrasts=[];
+if isfield(spec,"contrasts"),contrasts=spec.contrasts;end
 end
 
 function roi=getROIConfig(spec)
