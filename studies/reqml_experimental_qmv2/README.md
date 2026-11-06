@@ -1,3 +1,7 @@
+## Stage=plot output contract (2026-11-06)
+
+The plot stage returns a consistent struct with `stage`, `files`, `jobs`, and `models`, matching the `plan` and `analyze` stages. Use `disp(F.files)` after pulling the latest patch. Before that patch, `F` was itself a string array of output filenames: `disp(F)` shows already-generated plots without regenerating anything. Existing PNGs and CSVs are unchanged.
+
 # Configurable experimental QMV2 comparison: SP, RSWE, bilayer, homogeneous, inclusion
 
 This opt-in study brings **SP and RSWE into one common experimental pipeline**.
@@ -139,6 +143,7 @@ R=run_qmv2_experimental_study( ...
 F=run_qmv2_experimental_study( ...
     ManifestFile=manifest,Stage="plot",CaseIDs=caseIDs);
 disp(R.summary)
+disp(F.files)
 ```
 
 The per-dataset output layout is:
