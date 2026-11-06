@@ -1,0 +1,351 @@
+{
+  "study_id": "qmv2_sp_rswe_phantoms_v1",
+  "data_root": "/Users/sara/local/experimental-data-reorganized",
+  "reqml_root": "/Users/sara/local/req-ml",
+  "ewp_root": "/Users/sara/local/experimental-wavefield-processing",
+  "m": 2,
+  "step_pixels": 5,
+  "filtered_run": "qmv2_global_donut_0p8_8_v1",
+  "filter": {
+    "cs_min_m_s": 0.8,
+    "cs_max_m_s": 8,
+    "taper_relative": 0.06
+  },
+  "sws_limits": [
+    1,
+    4
+  ],
+  "analysis_version": "physical_rois_v2_inclusion_core_large_bg",
+  "arms": [
+    "reduced14",
+    "reduced14_filtered",
+    "qmv2_unfiltered_reduced14",
+    "qmv2_unfiltered_reduced14_frequency",
+    "qmv2_unfiltered_expanded20",
+    "qmv2_unfiltered_expanded20_frequency",
+    "qmv2_fixed_donut_reduced14",
+    "qmv2_fixed_donut_reduced14_frequency",
+    "qmv2_fixed_donut_expanded20",
+    "qmv2_fixed_donut_expanded20_frequency"
+  ],
+  "cases": [
+    {
+      "id": "2026Feb27_dl_sp",
+      "relative_path": "2026-02-27/2026Feb27_dl_sp",
+      "modality": "sp",
+      "type": "bilayer",
+      "raw_run": "reqml_compare_raw_no_spatial_v1",
+      "raw_file_pattern": "test1_{frequency}Hz.mat",
+      "frequencies_hz": [
+        300,
+        400,
+        500,
+        600
+      ],
+      "remove_svd_modes": 0,
+      "make_isotropic": true,
+      "rois": [
+        {
+          "name": "soft",
+          "center_mm": [
+            19,
+            13
+          ],
+          "size_mm": [
+            14.2,
+            3.2
+          ]
+        },
+        {
+          "name": "hard",
+          "center_mm": [
+            19,
+            24.1
+          ],
+          "size_mm": [
+            14.2,
+            3.2
+          ]
+        }
+      ],
+      "contrasts": []
+    },
+    {
+      "id": "2026Feb27_dl_rswe",
+      "relative_path": "2026-02-27/2026Feb27_dl_rswe",
+      "modality": "rswe",
+      "type": "bilayer",
+      "raw_run": "reqml_compare_raw_no_spatial_v1",
+      "raw_file_pattern": "test1_{frequency}Hz.mat",
+      "frequencies_hz": [
+        300,
+        400,
+        500,
+        600
+      ],
+      "remove_svd_modes": 0,
+      "make_isotropic": true,
+      "rois": [
+        {
+          "name": "soft",
+          "center_mm": [
+            19,
+            13
+          ],
+          "size_mm": [
+            14.2,
+            3.2
+          ]
+        },
+        {
+          "name": "hard",
+          "center_mm": [
+            19,
+            24.1
+          ],
+          "size_mm": [
+            14.2,
+            3.2
+          ]
+        }
+      ],
+      "contrasts": []
+    },
+    {
+      "id": "2026Feb27_homo_10perc_sp",
+      "relative_path": "2026-02-27/2026Feb27_homo_10perc_sp",
+      "modality": "sp",
+      "type": "homogeneous",
+      "raw_run": "reqml_compare_raw_no_spatial_v1",
+      "raw_file_pattern": "test1_{frequency}Hz.mat",
+      "frequencies_hz": [
+        300,
+        400,
+        500,
+        600
+      ],
+      "remove_svd_modes": 0,
+      "make_isotropic": true,
+      "rois": [
+        {
+          "name": "central",
+          "center_mm": [
+            19,
+            19.25
+          ],
+          "size_mm": [
+            17,
+            15
+          ]
+        }
+      ],
+      "contrasts": []
+    },
+    {
+      "id": "2026Feb27_homo_10perc_rswe",
+      "relative_path": "2026-02-27/2026Feb27_homo_10perc_rswe",
+      "modality": "rswe",
+      "type": "homogeneous",
+      "raw_run": "reqml_compare_raw_no_spatial_v1",
+      "raw_file_pattern": "test1_{frequency}Hz.mat",
+      "frequencies_hz": [
+        300,
+        400,
+        500,
+        600
+      ],
+      "remove_svd_modes": 0,
+      "make_isotropic": true,
+      "rois": [
+        {
+          "name": "central",
+          "center_mm": [
+            19,
+            19.25
+          ],
+          "size_mm": [
+            17,
+            15
+          ]
+        }
+      ],
+      "contrasts": []
+    },
+    {
+      "id": "2026Feb27_homo_5perc_sp",
+      "relative_path": "2026-02-27/2026Feb27_homo_5perc_sp",
+      "modality": "sp",
+      "type": "homogeneous",
+      "raw_run": "reqml_compare_raw_no_spatial_v1",
+      "raw_file_pattern": "test1_{frequency}Hz.mat",
+      "frequencies_hz": [
+        300,
+        400,
+        500,
+        600
+      ],
+      "remove_svd_modes": 0,
+      "make_isotropic": true,
+      "rois": [
+        {
+          "name": "central",
+          "center_mm": [
+            19,
+            19.25
+          ],
+          "size_mm": [
+            17,
+            15
+          ]
+        }
+      ],
+      "contrasts": []
+    },
+    {
+      "id": "2026Feb27_homo_5perc_rswe",
+      "relative_path": "2026-02-27/2026Feb27_homo_5perc_rswe",
+      "modality": "rswe",
+      "type": "homogeneous",
+      "raw_run": "reqml_compare_raw_no_spatial_v1",
+      "raw_file_pattern": "test1_{frequency}Hz.mat",
+      "frequencies_hz": [
+        300,
+        400,
+        500,
+        600
+      ],
+      "remove_svd_modes": 0,
+      "make_isotropic": true,
+      "rois": [
+        {
+          "name": "central",
+          "center_mm": [
+            19,
+            19.25
+          ],
+          "size_mm": [
+            17,
+            15
+          ]
+        }
+      ],
+      "contrasts": []
+    },
+    {
+      "id": "2026Feb19_inc_sp",
+      "relative_path": "2026-02-19/2026Feb19_inc_sp",
+      "modality": "sp",
+      "type": "inclusion",
+      "raw_run": "auto",
+      "raw_file_pattern": "",
+      "frequencies_hz": [],
+      "remove_svd_modes": 0,
+      "make_isotropic": true,
+      "rois": [
+        {
+          "name": "inclusion_core",
+          "center_mm": [
+            19.5,
+            24.5
+          ],
+          "size_mm": [
+            8,
+            8
+          ]
+        },
+        {
+          "name": "inclusion_large",
+          "center_mm": [
+            19.5,
+            24.5
+          ],
+          "size_mm": [
+            12,
+            12
+          ]
+        },
+        {
+          "name": "background_ref",
+          "center_mm": [
+            28,
+            13.5
+          ],
+          "size_mm": [
+            6,
+            6
+          ]
+        }
+      ],
+      "contrasts": [
+        {
+          "name": "core_vs_background",
+          "target_roi": "inclusion_core",
+          "reference_roi": "background_ref"
+        },
+        {
+          "name": "large_vs_background",
+          "target_roi": "inclusion_large",
+          "reference_roi": "background_ref"
+        }
+      ]
+    },
+    {
+      "id": "2026Feb19_inc_rswe",
+      "relative_path": "2026-02-19/2026Feb19_inc_rswe",
+      "modality": "rswe",
+      "type": "inclusion",
+      "raw_run": "auto",
+      "raw_file_pattern": "",
+      "frequencies_hz": [],
+      "remove_svd_modes": 0,
+      "make_isotropic": true,
+      "rois": [
+        {
+          "name": "inclusion_core",
+          "center_mm": [
+            19.5,
+            24.5
+          ],
+          "size_mm": [
+            8,
+            8
+          ]
+        },
+        {
+          "name": "inclusion_large",
+          "center_mm": [
+            19.5,
+            24.5
+          ],
+          "size_mm": [
+            12,
+            12
+          ]
+        },
+        {
+          "name": "background_ref",
+          "center_mm": [
+            28,
+            13.5
+          ],
+          "size_mm": [
+            6,
+            6
+          ]
+        }
+      ],
+      "contrasts": [
+        {
+          "name": "core_vs_background",
+          "target_roi": "inclusion_core",
+          "reference_roi": "background_ref"
+        },
+        {
+          "name": "large_vs_background",
+          "target_roi": "inclusion_large",
+          "reference_roi": "background_ref"
+        }
+      ]
+    }
+  ]
+}
