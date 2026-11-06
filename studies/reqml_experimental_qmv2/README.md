@@ -1,3 +1,65 @@
+## Experimental quality-mask ROI figures (2026-11-06)
+
+The full transfer is completed (8 experimental cases × 4 frequencies ×
+4 masks = 128 maps; 120 new, eight resumed). The analysis produces
+224 per-ROI rows and 64 inclusion/background contrast rows.
+These measure local retention and selected SWS statistics, not
+absolute experimental accuracy.
+
+**Important observed results:** homogeneous 5% RSWE has average
+ROI retention of ~52–65% across frequencies, with mean CV before
+~16–22% and after ~4–6%. In bilayer RSWE at 300 Hz, the soft
+layer retains only ~23–36% versus >92% in the hard layer.
+SP inclusion-core retention is ~97–100% averaged across frequencies.
+At 600 Hz, RSWE inclusion-core retention is **9.4% R14 raw,
+3.1% E20 raw, and 0% for both donut arms**. A tiny retained
+ROI can yield an artificially low spatial CV; no retained core
+means no retained SWS or contrast can be reported.
+
+The new Mode="roi_plots" reads only existing ROI CSV files and
+creates one three-panel plot per physical ROI: coverage by frequency,
+spatial CV before/after, and median SWS before/after, colored by the
+four frozen QMV2 model arms. The inclusion ROI pairs also receive
+contrast and target/background coverage figures. Empty ROIs remain
+NaN, not zero and not imputed.
+
+```bash
+cd /Users/sara/local/shear-wave-estimation-evaluation
+git pull --ff-only
+```
+
+```matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+study=fullfile(pwd,"studies","reqml_experimental_qmv2");
+addpath(study,"-begin")
+clear run_qmv2_experimental_risk_mask qmv2_plot_experimental_mask_rois
+rehash
+manifest=fullfile(study,"experiment_manifest.example.json");
+F=run_qmv2_experimental_risk_mask( ...
+    ManifestFile=manifest,Mode="roi_plots");
+disp(F.files)
+```
+
+The results are saved in each experiment's
+`analysis/<study_id>/M2_step5/<mask_analysis_version>/roi_figures`
+folder, separate from earlier maps. This stage performs NO re-fitting,
+mask scoring, filtering, SWS estimation, or IQ processing.
+
+To inspect the already calculated ROI tables directly:
+
+```matlab
+T=A.roi_summary;
+disp(T(contains(T.case_id,"homo_5perc_rswe") & T.roi=="central",:))
+disp(T(T.case_id=="2026Feb19_inc_rswe" & T.roi=="inclusion_core",:))
+disp(A.contrasts)
+```
+
+Interpret changes in CV together with retention: before and after
+statistics have different spatial supports. No experimental SWS
+reference is presumed.
+
+---
+
 ## Frozen QMV2 experimental quality-mask transfer (2026-11-06)
 
 After completing four synthetic masks and geometry-held-out validation,
