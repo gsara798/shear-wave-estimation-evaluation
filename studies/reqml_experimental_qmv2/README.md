@@ -1,3 +1,120 @@
+## Frozen QMV2 experimental quality-mask transfer (2026-11-06)
+
+After completing four synthetic masks and geometry-held-out validation,
+the experiment manifest now includes a **mask_transfer** section.
+The four exact model/filtration pairs and their frozen mask filenames
+are specified there; model selection is not embedded in MATLAB code.
+The risk score cutoff comes ONLY from the saved TRAIN OOF mask metadata
+(target retention 80%), and is **not** optimized using experimental
+maps, phantom ROI means, or reference SWS. Test geometries are untouched.
+
+The transfer runner `run_qmv2_experimental_risk_mask`:
+
+- `Mode="plan"`: lists missing fitted masks and original experimental
+  SWS estimates without writing or recomputing anything.
+- `Mode="run"`: reads each existing `reqml_result.mat` including
+  `patch_examples`, `q_map`, `cs_map`, and grid indices. The frozen
+  risk classifier uses **exactly the same extracted patch features**
+  and predicted q as the quantile estimator. No new IQ processing,
+  filtering, feature extraction, quantile fit or SWS estimation.
+- Scores are for likelihood *ranking*, not calibrated risk
+  probabilities. Only finite, SWS-valid windows are evaluated.
+  Three disjoint classes are stored: retained, rejected, unscorable.
+  An invalid original SWS pixel is never counted as retained.
+- Results use immutable source/mask-file fingerprints and a separate
+  versioned directory. The original SWS predictions are not changed.
+- `Mode="analyze"`: per-dataset, frequency, model and manifest-defined
+  physical ROI, produces original/retained/rejected counts, actual
+  retained fraction (experimental coverage may NOT be 80%),
+  mean/median SWS and spatial CV before/after masking.
+  For inclusion, contrasts before/after and target/background
+  retained fractions are reported. These are **descriptive**, not
+  errors against independent ground truth.
+- `Mode="plot"`: three-panel maps show original SWS, risk score
+  and SWS remaining after the *frozen TRAIN cutoff*, with consistent
+  spatial coordinates and the existing configured ROIs.
+
+### Preparation
+
+```bash
+cd /Users/sara/local/shear-wave-estimation-evaluation
+git pull --ff-only
+```
+
+```matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+study=fullfile(pwd,"studies","reqml_experimental_qmv2");
+addpath(study,"-begin")
+clear run_qmv2_experimental_risk_mask qmv2_score_experimental_risk_mask
+rehash
+t=runtests("tests/test_qmv2_experimental_risk_mask.m");
+assert(all([t.Passed]))
+manifest=fullfile(study,"experiment_manifest.example.json");
+
+P=run_qmv2_experimental_risk_mask( ...
+    ManifestFile=manifest,Mode="plan");
+disp(P.models)
+disp(P.jobs)
+```
+
+### Small pilot on the difficult experimental fields
+
+```matlab
+pilotIDs=["2026Feb27_homo_5perc_rswe","2026Feb19_inc_rswe"];
+pilotArms=["qmv2_unfiltered_reduced14", ...
+    "qmv2_unfiltered_expanded20"];
+
+Q=run_qmv2_experimental_risk_mask( ...
+    ManifestFile=manifest,Mode="run", ...
+    CaseIDs=pilotIDs,Arms=pilotArms, ...
+    FrequenciesHz=[300 600], ...
+    Verbose=true);
+disp(Q.status)
+
+F=run_qmv2_experimental_risk_mask( ...
+    ManifestFile=manifest,Mode="plot", ...
+    CaseIDs=pilotIDs,Arms=pilotArms, ...
+    FrequenciesHz=[300 600]);
+disp(F.files)
+```
+
+This is **8 mask mappings** from already saved experimental q/SWS
+estimates, with no model fitting. Examine rejected regions and
+coverage before scaling to the entire 8-dataset cohort.
+
+### All acquired datasets × four frozen masks
+
+```matlab
+Q=run_qmv2_experimental_risk_mask( ...
+    ManifestFile=manifest,Mode="run", ...
+    ConfirmFullRun=true);
+A=run_qmv2_experimental_risk_mask( ...
+    ManifestFile=manifest,Mode="analyze");
+F=run_qmv2_experimental_risk_mask( ...
+    ManifestFile=manifest,Mode="plot");
+disp(A.roi_summary)
+disp(A.contrasts)
+```
+
+The runner resumes successful pilot checkpoints. For eight datasets
+and four frequencies this is up to **128 already-estimated SWS maps**
+(4 frozen masks × 32 acquisitions), with zero IQ/SWS recomputation.
+
+Output examples, based on JSON settings:
+
+```text
+<dataset>/analysis/<study_id>/M<M>_step<N>/<mask_analysis_version>/masks/<arm>/<freq>Hz/risk_mask_result.mat
+<dataset>/analysis/<study_id>/M<M>_step<N>/<mask_analysis_version>/comparison_figures/mask_<arm>_<freq>Hz.png
+<data_root>/analysis/<study_id>/M<M>_step<N>/<mask_analysis_version>/quality_mask_experimental_roi_summary.csv
+<data_root>/analysis/<study_id>/M<M>_step<N>/<mask_analysis_version>/quality_mask_inclusion_contrasts.csv
+```
+
+The original ROI CSVs and q/SWS estimates remain unchanged.
+**Status:** Source and unit tests committed; local MATLAB execution
+has not yet been verified. Start with the pilot, not the full run.
+
+---
+
 ## Inclusion physical ROIs and paired contrast analysis (2026-11-06)
 
 After quantitative comparison of 5%/10% homogeneous and bilayer CSVs,
