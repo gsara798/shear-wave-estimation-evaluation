@@ -7,7 +7,7 @@ function report=run_qmv2_experimental_risk_mask(options)
 arguments
     options.ManifestFile (1,1) string
     options.Mode (1,1) string ...
-        {mustBeMember(options.Mode,["plan","run","analyze","plot"])} = "plan"
+        {mustBeMember(options.Mode,["plan","run","analyze","plot","roi_plots"])} = "plan"
     options.CaseIDs (1,:) string = strings(1,0)
     options.Arms (1,:) string = strings(1,0)
     options.FrequenciesHz (1,:) double = []
@@ -183,6 +183,12 @@ end
 if options.Mode=="plot"
     report.files=plotRiskMasks(C,jobs,models,analysisID);
     report.status="plotted";
+    return
+end
+if options.Mode=="roi_plots"
+    report.files=qmv2_plot_experimental_mask_rois( ...
+        C,jobs,models,analysisID);
+    report.status="roi_plotted";
     return
 end
 end
