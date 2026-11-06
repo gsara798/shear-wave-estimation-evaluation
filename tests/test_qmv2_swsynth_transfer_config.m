@@ -37,6 +37,8 @@ for i=1:8
     verifyEqual(tc,C.ModelPaths(i),expected);
 end
 verifyTrue(tc,contains(C.analysisRoot,"armIDs_"));
+verifyTrue(tc,endsWith(C.analysisRoot,"roi_homo30x30_v2"));
+verifyEqual(tc,C.ROIPolicy,"homo_center_30x30_mm_v2");
 verifyLessThan(tc,strlength(string(C.analysisRoot)),260);
 end
 
@@ -45,7 +47,7 @@ classic=swsynth_comparison_config( ...
     ReqmlRoot="/nonexistent/qmv2_readonly");
 verifyEqual(tc,numel(classic.Arms),7);
 verifyEqual(tc,classic.analysisRoot, ...
-    fullfile(classic.outputRoot,"analysis"));
+    fullfile(classic.outputRoot,"analysis","roi_homo30x30_v2"));
 arms=["reduced14","reduced14_filtered", ...
     "qmv2_unfiltered_reduced14", ...
     "qmv2_unfiltered_reduced14_frequency", ...
@@ -74,4 +76,32 @@ P=run_swsynth_comparison(Stage="plan", ...
 verifyEqual(tc,height(P),20);
 verifyEqual(tc,numel(unique(P.series)),5);
 verifyEqual(tc,unique(P.frequency_hz)',[300 400 500 600]);
+end
+
+function testCompactPlotLabelsAndNewHomogeneousROI(tc)
+arms=["reduced14","reduced14_filtered", ...
+    "qmv2_unfiltered_reduced14", ...
+    "qmv2_unfiltered_reduced14_frequency", ...
+    "qmv2_unfiltered_expanded20", ...
+    "qmv2_unfiltered_expanded20_frequency", ...
+    "qmv2_fixed_donut_reduced14", ...
+    "qmv2_fixed_donut_reduced14_frequency", ...
+    "qmv2_fixed_donut_expanded20", ...
+    "qmv2_fixed_donut_expanded20_frequency"];
+labels=swsynth_short_model_names(arms);
+verifyEqual(tc,numel(labels),10);
+verifyEqual(tc,numel(unique(labels)),10);
+verifyEqual(tc,labels(1:2),["R14 raw","R14 donut"]);
+verifyEqual(tc,labels(end-1:end),["Q20 donut","Q20+f donut"]);
+verifyTrue(tc,all(strlength(labels)<18));
+[r,truth]=swsynth_comparison_rois("point_homogeneous",3);
+verifyEqual(tc,numel(r),1);
+verifyEqual(tc,double(r.center),[25 25]);
+verifyEqual(tc,double(r.size),[30 30]);
+verifyEqual(tc,truth,3);
+[r,truth]=swsynth_comparison_rois("plane_bilayer",1.8);
+verifyEqual(tc,numel(r),2);
+verifyEqual(tc,double(r(1).size),[10 5]);
+verifyEqual(tc,double(r(2).size),[10 5]);
+verifyEqual(tc,truth,[1.8 3]);
 end
