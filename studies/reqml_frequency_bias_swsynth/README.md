@@ -1,3 +1,68 @@
+## Homogeneous ROI v2 and cleaner comparison plots (2026-11-05)
+
+The fixed **central ROI for both homogeneous groups** is now **30 x 30 mm**,
+centered at (x,z)=(25,25) mm: the physical extent is x,z = 10..40 mm.
+This includes the middle interference/low-amplitude band and neighboring
+areas. It is predeclared, identical for all model arms and frequencies;
+the boundaries are never selected based on estimated SWS or model error.
+Both bilayer ROIs are UNCHANGED: 10 x 5 mm, away from the interface.
+
+No wavefields, trained models, filter outputs, or existing SWS estimates
+are touched. New ROI analysis outputs are isolated under the versioned
+`roi_homo30x30_v2` subdirectory. Previous 10 x 10 mm ROI CSVs
+and figures are preserved.
+
+Presentation-only changes: compact model aliases, colors shared by
+raw/donut variants of each family, dashed donut curves, one global
+legend below the figure, a paired bilayer soft/hard SWS plot, and maps
+in at most five columns with only outer ticks and ONE shared colorbar.
+All CSV data retains full original model IDs.
+
+### Rebuild ROI analysis and plots without rerunning estimates
+
+```matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+addpath(fullfile(pwd,"src"),"-begin")
+addpath(fullfile(pwd,"studies","reqml_frequency_bias_swsynth"),"-begin")
+clear swsynth_comparison_rois swsynth_comparison_config
+clear plot_swsynth_comparison swsynth_short_model_names
+rehash
+
+t=runtests(["tests/test_reqml_swsynth_comparison_config.m", ...
+    "tests/test_qmv2_swsynth_transfer_config.m"]);
+assert(all([t.Passed]))
+
+old=["reduced14","reduced14_filtered"];
+sets=["reduced14","reduced14_frequency", ...
+    "expanded20","expanded20_frequency"];
+arms=[old,"qmv2_unfiltered_"+sets,"qmv2_fixed_donut_"+sets];
+
+R=run_swsynth_comparison(Stage="analyze", ...
+    Arms=arms,M=2,StepPixels=5);
+files=run_swsynth_comparison(Stage="plot", ...
+    Arms=arms,M=2,StepPixels=5);
+
+C=swsynth_comparison_config(Arms=arms,M=2,StepPixels=5);
+disp(C.analysisRoot)
+disp(R.frequency_shifts(:,["series","model","roi", ...
+    "delta_mean_sws_600_minus_300_m_s", ...
+    "mape_300_percent","mape_600_percent"]))
+```
+
+New plots are in `fullfile(C.analysisRoot,"comparison_figures")`.
+Previous v1 ROI summaries remain available for sensitivity analysis.
+Counts of valid patch centers may differ across frequency because
+the window/patch geometry is wavelength-dependent. Use
+`common_valid_pixels` to check each case; the shared support is
+consistent across models within each frequency, not paired across
+frequencies.
+
+Do not interpret a v1-versus-v2 MAPE difference as a model change.
+Compare all models on the same v2 ROI and document the ROI extent.
+
+**Status:** MATLAB tests and plotting still require local execution.
+
+---
 ## QMV2 transfer: eight adaptive-q models vs frozen Reduced14 (2026-11-05)
 
 This opt-in study tests the **eight QMV2 train-only models** on the
