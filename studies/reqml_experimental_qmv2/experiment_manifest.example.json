@@ -15,7 +15,7 @@
     1,
     4
   ],
-  "analysis_version": "physically_fixed_rois_v1",
+  "analysis_version": "physical_rois_v2_inclusion_core_large_bg",
   "arms": [
     "reduced14",
     "reduced14_filtered",
@@ -235,7 +235,53 @@
       "frequencies_hz": [],
       "remove_svd_modes": 0,
       "make_isotropic": true,
-      "rois": []
+      "rois": [
+        {
+          "name": "inclusion_core",
+          "center_mm": [
+            19.5,
+            24.5
+          ],
+          "size_mm": [
+            8,
+            8
+          ]
+        },
+        {
+          "name": "inclusion_large",
+          "center_mm": [
+            19.5,
+            24.5
+          ],
+          "size_mm": [
+            12,
+            12
+          ]
+        },
+        {
+          "name": "background_ref",
+          "center_mm": [
+            28,
+            13.5
+          ],
+          "size_mm": [
+            6,
+            6
+          ]
+        }
+      ],
+      "contrasts": [
+        {
+          "name": "core_vs_background",
+          "target_roi": "inclusion_core",
+          "reference_roi": "background_ref"
+        },
+        {
+          "name": "large_vs_background",
+          "target_roi": "inclusion_large",
+          "reference_roi": "background_ref"
+        }
+      ]
     },
     {
       "id": "2026Feb19_inc_rswe",
@@ -247,7 +293,53 @@
       "frequencies_hz": [],
       "remove_svd_modes": 0,
       "make_isotropic": true,
-      "rois": []
+      "rois": [
+        {
+          "name": "inclusion_core",
+          "center_mm": [
+            19.5,
+            24.5
+          ],
+          "size_mm": [
+            8,
+            8
+          ]
+        },
+        {
+          "name": "inclusion_large",
+          "center_mm": [
+            19.5,
+            24.5
+          ],
+          "size_mm": [
+            12,
+            12
+          ]
+        },
+        {
+          "name": "background_ref",
+          "center_mm": [
+            28,
+            13.5
+          ],
+          "size_mm": [
+            6,
+            6
+          ]
+        }
+      ],
+      "contrasts": [
+        {
+          "name": "core_vs_background",
+          "target_roi": "inclusion_core",
+          "reference_roi": "background_ref"
+        },
+        {
+          "name": "large_vs_background",
+          "target_roi": "inclusion_large",
+          "reference_roi": "background_ref"
+        }
+      ]
     }
   ]
 }
