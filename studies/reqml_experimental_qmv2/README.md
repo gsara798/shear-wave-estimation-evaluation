@@ -1,3 +1,52 @@
+## Five-percent homogeneous SP/RSWE extension (2026-11-06)
+
+The existing SP/RSWE comparison scripts define
+`2026Feb27_homo_5perc_sp` and `2026Feb27_homo_5perc_rswe`, with the
+same fixed **central** ROI as the 10% homogeneous acquisitions:
+center `[19,19.25]` mm, size `[17,15]` mm. Both cases have been added
+to the **example JSON manifest** (not hard-coded into the workflow).
+The plan now checks eight cases instead of six. Their availability
+has not yet been verified on the user's machine.
+
+Run **only the two new cases** first:
+
+```matlab
+manifest=fullfile(pwd,"studies","reqml_experimental_qmv2", ...
+    "experiment_manifest.example.json");
+ids=["2026Feb27_homo_5perc_sp","2026Feb27_homo_5perc_rswe"];
+P=run_qmv2_experimental_study( ...
+    ManifestFile=manifest,Stage="plan",CaseIDs=ids);
+disp(P.jobs(:,["case_id","frequency_hz","raw_run", ...
+    "raw_exists","run_candidates"]))
+```
+
+Only after `all(P.jobs.raw_exists)` and `all(P.models.model_present)`
+are true, run:
+
+```matlab
+Q=run_qmv2_experimental_study( ...
+    ManifestFile=manifest,Stage="estimate",CaseIDs=ids, ...
+    UseParallel=true,ConfirmFullRun=true);
+```
+
+**Important:** The analysis stage writes both per-case summaries and a
+combined summary in the study folder. To avoid replacing the existing
+six-case combined CSV with only two cases, run `analyze`/`plot` with
+the *default full eight-case scope* only after the two newly added
+cases have completed. Existing six-case estimates are reused.
+
+```matlab
+A=run_qmv2_experimental_study(ManifestFile=manifest,Stage="analyze");
+F=run_qmv2_experimental_study(ManifestFile=manifest,Stage="plot");
+disp(F.files)
+```
+
+If the old `reqml_compare_raw_no_spatial_v1` processed run is missing
+for 5%, examine available runs in `run_candidates` and update
+`raw_run` in JSON. Do not silently substitute a low-pass or spatially
+filtered run; verify its provenance first.
+
+---
 ## Stage=plot output contract (2026-11-06)
 
 The plot stage returns a consistent struct with `stage`, `files`, `jobs`, and `models`, matching the `plan` and `analyze` stages. Use `disp(F.files)` after pulling the latest patch. Before that patch, `F` was itself a string array of output filenames: `disp(F)` shows already-generated plots without regenerating anything. Existing PNGs and CSVs are unchanged.
