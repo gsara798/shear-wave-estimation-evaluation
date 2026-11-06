@@ -1,3 +1,101 @@
+## QMV2 transfer: eight adaptive-q models vs frozen Reduced14 (2026-11-05)
+
+This opt-in study tests the **eight QMV2 train-only models** on the
+existing **20 nondispersive swsynth V2 wavefields**. It does not
+regenerate simulations, train regressors, modify the existing ROI geometry,
+or overwrite the previous Reduced14/Reduced16/candidate comparisons.
+
+Four predictor sets are evaluated separately with and without the fixed
+whole-field FFT donut: `reduced14`,
+`reduced14_frequency`, `expanded20` and
+`expanded20_frequency`. The filtered branch uses the **same**
+0.8–8 m/s and 0.06 taper used in QMV2. The new models' learned
+`frequency_hz` column is exported with the deployable name
+`campaign_frequency_hz`, which `reqml.predictSWS` already provides
+as the observed frequency. The regression weights are **unchanged**.
+
+### Preparation in REQ-ML
+
+First pull the latest QMV2 branch of the **REQ-ML** repository and run
+`export_quality_v2_quantile_transfer` for `unfiltered` and
+`fixed_donut`, as documented in
+`training/quality_mask_v2_campaign/README.md`. The eight
+standalone deployable bundles are placed under
+`postprocess_v1/quantile_oof_M1to3_v1/<arm>/transfer_bundles_v1/<set>/model_bundle.mat`.
+The frozen baseline `reduced14_transfer_bundle_v1` remains untouched.
+
+### MATLAB: read-only plan, tests, pilot and all 20 cases
+
+```matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+addpath(fullfile(pwd,"src"),"-begin")
+addpath(fullfile(pwd,"studies","reqml_frequency_bias_swsynth"),"-begin")
+clear swsynth_comparison_config run_swsynth_comparison
+rehash
+
+t=runtests("tests/test_qmv2_swsynth_transfer_config.m");
+assert(all([t.Passed]))
+
+old=["reduced14","reduced14_filtered"];
+sets=["reduced14","reduced14_frequency", ...
+    "expanded20","expanded20_frequency"];
+arms=[old, "qmv2_unfiltered_"+sets, "qmv2_fixed_donut_"+sets];
+
+P=run_swsynth_comparison( ...
+    Stage="plan",Arms=arms,M=2,StepPixels=5);
+assert(all(P.simulation_done),"One or more original simulations are missing.");
+
+% Single case, two QMV2 arms with and without a filter: verifies that
+% exported models, input filter and public frequency predictor work.
+caseID="point_homo_cs180_f500";
+run_swsynth_comparison(Stage="filter",CaseIDs=caseID);
+pilot=run_swsynth_comparison(Stage="estimate", ...
+    CaseIDs=caseID, ...
+    Arms=["qmv2_unfiltered_expanded20_frequency", ...
+          "qmv2_fixed_donut_expanded20_frequency"], ...
+    M=2,StepPixels=5,UseParallel=true);
+
+% Finish all 20 cases x 10 arms. Existing estimates are checked and reused.
+R=run_swsynth_comparison( ...
+    Stage="all",Arms=arms,M=2,StepPixels=5, ...
+    UseParallel=true);
+disp(R.frequency_shifts)
+```
+
+Per-case SWS summary:
+`R.summary`, containing the **common-support ROI**
+MAPE, bias, spatial SD/CV, median q at each frequency. Systematic
+frequency bias is summarized by `R.frequency_shifts`, with the
+change in mean SWS from 300 to 600 Hz. Homogeneous uses one central ROI;
+the bilayer reports *soft* and *hard* ROIs separately. Default study ROI
+sizes, coordinates, wavefields, frequencies and truth values are unchanged.
+
+The dedicated results are saved under
+`outputs/comparison/analysis/alternatives/M2_step5_armIDs_.../`,
+distinct from all previous ROI summaries. The estimate paths retain
+`<series>/REQ-ML/<arm>/<freq>Hz/M2/step5/`, so no previous
+arm is overwritten. A concise arm-ID directory name avoids macOS
+path-component length limits.
+
+### Scientific decision rule
+
+Compare (i) measured SWS error in each ROI at each frequency, (ii)
+`delta_mean_sws_600_minus_300_m_s` within homogeneous or
+bilayer layer, (iii) frequency slope/bias direction, and (iv) consistency
+across plane homogeneous, plane bilayer, and point homogeneous cases.
+Do not pool physically distinct groups into a single leaderboard. Minor
+validation-q-MAE differences do not establish superior SWS performance.
+These simulations have **no constitutive dispersion**, so any SWS
+frequency trend reflects simulation/estimator behavior. The simulator
+does not resolve complete k-Wave interface reflection, finite-contact
+actuation or tracking noise. This is an **external frequency-transfer
+control**, not the untouched QMV2 TEST partition.
+
+**Status:** Code/registry/tests prepared; MATLAB inference and numerical
+results must be validated locally before conclusions.
+
+---
+
 # REQ-ML frequency-bias controls using swsynth V2
 
 Three **separate, deterministic** source/medium groups, all measured as the
