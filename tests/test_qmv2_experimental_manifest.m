@@ -1,5 +1,6 @@
 function tests=test_qmv2_experimental_manifest
-% No local experimental datasets, IQ processing, inference or file writes.
+% No local experimental datasets, IQ processing, or inference.
+% Temporary manifest files are isolated and deleted after each test.
 tests=functiontests(localfunctions);
 end
 
@@ -63,4 +64,47 @@ verifyEqual(tc,height(P.models),1);
 verifyEqual(tc,P.models.input_kind,"raw");
 verifyTrue(tc,all(P.jobs.case_id=="2026Feb27_dl_sp"));
 verifyTrue(tc,all(P.jobs.rois_defined));
+end
+
+function testNondefaultManifestOptionsAreHonored(tc)
+% Guard against a parser silently overwriting JSON settings with defaults.
+C=jsondecode(fileread(tc.TestData.manifest));
+C.m=3;
+C.step_pixels=4;
+C.sws_limits=[0.5 5.5];
+C.analysis_version="custom_validation_v3";
+C.filter.cs_min_m_s=1.1;
+C.filter.cs_max_m_s=6;
+C.filter.taper_relative=0.08;
+path=tempname+".json";
+fid=fopen(path,"w");
+assert(fid>=0,"ExpQMV2:TestTemp","Cannot create temporary manifest.");
+cleanup=onCleanup(@()deleteIfPresent(path)); %#ok<NASGU>
+fprintf(fid,"%s",jsonencode(C));
+fclose(fid);
+actual=read_qmv2_experiment_manifest(string(path));
+verifyEqual(tc,actual.m,3);
+verifyEqual(tc,actual.step_pixels,4);
+verifyEqual(tc,actual.sws_limits,[0.5 5.5]);
+verifyEqual(tc,actual.analysis_version,"custom_validation_v3");
+verifyEqual(tc,actual.filter.cs_min_m_s,1.1);
+verifyEqual(tc,actual.filter.cs_max_m_s,6);
+verifyEqual(tc,actual.filter.taper_relative,0.08);
+end
+
+function testMalformedFilterIsRejected(tc)
+C=jsondecode(fileread(tc.TestData.manifest));
+C.filter=rmfield(C.filter,"cs_min_m_s");
+path=tempname+".json";
+fid=fopen(path,"w");
+assert(fid>=0,"ExpQMV2:TestTemp","Cannot create temporary manifest.");
+cleanup=onCleanup(@()deleteIfPresent(path)); %#ok<NASGU>
+fprintf(fid,"%s",jsonencode(C));
+fclose(fid);
+verifyError(tc,@()read_qmv2_experiment_manifest(string(path)), ...
+    "ExpQMV2:Filter");
+end
+
+function deleteIfPresent(path)
+if isfile(path),delete(path);end
 end
