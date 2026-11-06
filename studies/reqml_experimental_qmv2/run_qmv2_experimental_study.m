@@ -142,7 +142,9 @@ if options.Stage=="analyze"
     return
 end
 if options.Stage=="plot"
-    out=qmv2_plot_experimental_study(C,jobs,models);
+    files=qmv2_plot_experimental_study(C,jobs,models);
+    out=struct("stage","plot","files",files, ...
+        "jobs",jobs,"models",models);
     return
 end
 end
