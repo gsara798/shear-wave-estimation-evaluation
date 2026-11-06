@@ -67,7 +67,8 @@
             3.2
           ]
         }
-      ]
+      ],
+      "contrasts": []
     },
     {
       "id": "2026Feb27_dl_rswe",
@@ -107,7 +108,8 @@
             3.2
           ]
         }
-      ]
+      ],
+      "contrasts": []
     },
     {
       "id": "2026Feb27_homo_10perc_sp",
@@ -136,7 +138,8 @@
             15
           ]
         }
-      ]
+      ],
+      "contrasts": []
     },
     {
       "id": "2026Feb27_homo_10perc_rswe",
@@ -165,7 +168,8 @@
             15
           ]
         }
-      ]
+      ],
+      "contrasts": []
     },
     {
       "id": "2026Feb27_homo_5perc_sp",
@@ -194,7 +198,8 @@
             15
           ]
         }
-      ]
+      ],
+      "contrasts": []
     },
     {
       "id": "2026Feb27_homo_5perc_rswe",
@@ -223,7 +228,8 @@
             15
           ]
         }
-      ]
+      ],
+      "contrasts": []
     },
     {
       "id": "2026Feb19_inc_sp",
