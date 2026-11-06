@@ -347,5 +347,6 @@
         }
       ]
     }
-  ]
+  ],
+  "roi_min_fov_fraction": 0.9
 }
