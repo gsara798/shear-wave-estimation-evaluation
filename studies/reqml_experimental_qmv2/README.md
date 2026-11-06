@@ -21,7 +21,8 @@ large/background. The `analyze` stage now creates:
   median SWS difference (m/s), ratio, percent median contrast,
   mean difference, spatial CNR, pixel counts and
   `roi_pair_within_fov` (true when both ROI physical extents
-  are >=90% covered by the estimated map-center grid).
+  reach the configurable JSON `roi_min_fov_fraction`, 0.90 by default,
+  on the estimated map-center grid).
 - The combined `all_inclusion_contrasts.csv` in the shared analysis root.
 - Extra `comparison_figures/contrast_<name>_M2.png` with contrast
   and spatial CNR vs acquisition frequency, plus the standard
