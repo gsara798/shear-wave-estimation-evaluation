@@ -27,6 +27,7 @@ C.FilterCsMin=0.8;
 C.FilterCsMax=8;
 C.FilterTaper=0.06;
 C.SWSColorLimits=[1 4];
+C.ROIPolicy="homo_center_30x30_mm_v2";
 legacyArms=["A_raw_v1","B_filtered_v1","C_filtered_v2", ...
     "candidate10","candidate","candidate10_filtered","candidate_filtered"];
 % QMV2 final-model bundles from grouped 5-fold training. The trained
@@ -79,7 +80,8 @@ end
 C.Inputs=C.AllInputs(indices);
 C.ModelPaths=modelPaths(indices);
 C.analysisRoot=fullfile(C.outputRoot,"analysis");
-% Preserve the original seven-arm analysis path and all prior outputs.
+% Keep estimate paths unchanged; place v2 ROI analyses under an independent
+% versioned subdirectory, preserving ALL previous v1 figures and CSVs.
 if ~isequal(C.Arms,legacyArms) || C.M~=2 || C.StepPixels~=2
     if any(startsWith(C.Arms,"qmv2_"))
         % Concise, deterministic arm-ID tag avoids macOS path-component
@@ -92,6 +94,8 @@ if ~isequal(C.Arms,legacyArms) || C.M~=2 || C.StepPixels~=2
     end
     C.analysisRoot=fullfile(C.analysisRoot,"alternatives",tag);
 end
+% Never overwrite earlier 10x10-mm homogeneous ROI results.
+C.analysisRoot=fullfile(C.analysisRoot,"roi_homo30x30_v2");
 C.Cases=prepare_swsynth_frequency_study( ...
     OutputRoot=C.simulationOutputRoot,WriteConfigs=false);
 C.Cases.series=regexprep(C.Cases.case_id,"_f[0-9]+$","");
