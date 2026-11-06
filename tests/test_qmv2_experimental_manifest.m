@@ -32,10 +32,10 @@ C=read_qmv2_experiment_manifest(tc.TestData.manifest);
 s=C.cases(1);
 verifyEqual(tc,string(s.type),"bilayer");
 verifyEqual(tc,string({s.rois.name}),["soft","hard"]);
-verifyEqual(tc,double(s.rois(1).center_mm),[19 13]);
-verifyEqual(tc,double(s.rois(2).center_mm),[19 24.1]);
-verifyEqual(tc,double(s.rois(1).size_mm),[14.2 3.2]);
-verifyEqual(tc,double(s.rois(2).size_mm),[14.2 3.2]);
+verifyEqual(tc,reshape(double(s.rois(1).center_mm),1,[]),[19 13]);
+verifyEqual(tc,reshape(double(s.rois(2).center_mm),1,[]),[19 24.1]);
+verifyEqual(tc,reshape(double(s.rois(1).size_mm),1,[]),[14.2 3.2]);
+verifyEqual(tc,reshape(double(s.rois(2).size_mm),1,[]),[14.2 3.2]);
 verifyEmpty(tc,C.cases(5).rois);
 verifyEmpty(tc,C.cases(6).rois);
 end
