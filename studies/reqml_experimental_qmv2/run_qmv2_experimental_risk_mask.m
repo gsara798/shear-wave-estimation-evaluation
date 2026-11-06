@@ -30,7 +30,7 @@ assert(strlength(analysisID)>0 && ...
     ismember(char(analysisID),['_','-'])), ...
     "ExpQMV2:MaskAnalysisID","Unsafe analysis_version directory name.");
 entries=settings.arms;
-assert(all(isfield(entries,{"arm","mask_file"})), ...
+assert(all(isfield(entries,cellstr(["arm","mask_file"]))), ...
     "ExpQMV2:MaskEntry","Each mask entry needs arm and mask_file.");
 configured=string({entries.arm});
 assert(numel(unique(configured))==numel(configured) && ...
@@ -45,8 +45,6 @@ assert(~isempty(selected) && numel(unique(selected))==numel(selected) && ...
 cases=options.CaseIDs;
 if isempty(cases),cases=string({C.cases.id});end
 [jobs,models]=qmv2_experimental_plan(C,cases,selected);
-assert(all(models.model_present),"ExpQMV2:MaskQuantileMissing", ...
-    "Quantile bundle unavailable. Check REQ-ML export.");
 if ~isempty(options.FrequenciesHz)
     assert(all(isfinite(options.FrequenciesHz)) && ...
         all(options.FrequenciesHz>0) && ...
@@ -90,6 +88,8 @@ if options.Mode=="plan"
     disp(jobs(:,["case_id","frequency_hz","raw_exists","estimate_present"]));
     return
 end
+assert(all(models.model_present),"ExpQMV2:MaskQuantileMissing", ...
+    "Quantile bundle unavailable. Check REQ-ML export.");
 assert(all(models.mask_present) && all(jobs.estimate_present), ...
     "ExpQMV2:MaskInputsMissing", ...
     "Mask bundles or existing SWS estimates missing. Run Mode=plan.");
@@ -165,7 +165,7 @@ if options.Mode=="analyze"
     return
 end
 if options.Mode=="plot"
-    report.files=plotRiskMasks(C,settings,jobs,models,analysisID);
+    report.files=plotRiskMasks(C,jobs,models,analysisID);
     report.status="plotted";
     return
 end
@@ -362,7 +362,7 @@ assert(isequal(size(selected),size(Q.original_valid_mask)), ...
     "ROI mask is not aligned with saved SWS grid.");
 end
 
-function files=plotRiskMasks(C,settings,jobs,models,version)
+function files=plotRiskMasks(C,jobs,models,version)
 files=strings(0,1);
 for ji=1:height(jobs)
     job=jobs(ji,:);
@@ -418,9 +418,6 @@ for ji=1:height(jobs)
         exportgraphics(fig,path,Resolution=170);
         close(fig);
         files(end+1,1)=path; %#ok<AGROW>
-        if isfield(settings,"analysis_version") %#ok<*ISFLD>
-            % settings is kept for provenance; never adapt cutoff here.
-        end
     end
 end
 end
