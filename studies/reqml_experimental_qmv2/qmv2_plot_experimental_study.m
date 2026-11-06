@@ -120,7 +120,8 @@ for id=caseIDs'
                 "NumColumns",min(5,nArms));
             lg.Layout.Tile="south";
             suffix="";
-            if any(~logical(subset.roi_pair_within_fov))
+            fovStatus=lower(string(subset.roi_pair_within_fov));
+            if any(fovStatus=="false" | fovStatus=="0")
                 suffix=" | WARNING: partial ROI coverage";
             end
             title(tl,id+" | "+c+" | M="+string(C.m)+suffix, ...
