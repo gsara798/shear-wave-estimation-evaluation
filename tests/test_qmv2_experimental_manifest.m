@@ -11,16 +11,16 @@ addpath(folder,"-begin");
 tc.TestData.manifest=fullfile(folder,"experiment_manifest.example.json");
 end
 
-function testSixCasesAcrossDatesAndModalities(tc)
+function testEightCasesAcrossDatesAndModalities(tc)
 C=read_qmv2_experiment_manifest(tc.TestData.manifest);
-verifyEqual(tc,numel(C.cases),6);
+verifyEqual(tc,numel(C.cases),8);
 verifyEqual(tc,numel(C.arms),10);
 types=string({C.cases.type});
 verifyEqual(tc,nnz(types=="inclusion"),2);
 verifyEqual(tc,nnz(types=="bilayer"),2);
-verifyEqual(tc,nnz(types=="homogeneous"),2);
-verifyEqual(tc,sum(string({C.cases.modality})=="sp"),3);
-verifyEqual(tc,sum(string({C.cases.modality})=="rswe"),3);
+verifyEqual(tc,nnz(types=="homogeneous"),4);
+verifyEqual(tc,sum(string({C.cases.modality})=="sp"),4);
+verifyEqual(tc,sum(string({C.cases.modality})=="rswe"),4);
 verifyEqual(tc,C.m,2);
 verifyEqual(tc,C.step_pixels,5);
 verifyEqual(tc,C.filter.cs_min_m_s,0.8);
@@ -36,8 +36,31 @@ verifyEqual(tc,reshape(double(s.rois(1).center_mm),1,[]),[19 13]);
 verifyEqual(tc,reshape(double(s.rois(2).center_mm),1,[]),[19 24.1]);
 verifyEqual(tc,reshape(double(s.rois(1).size_mm),1,[]),[14.2 3.2]);
 verifyEqual(tc,reshape(double(s.rois(2).size_mm),1,[]),[14.2 3.2]);
-verifyEmpty(tc,C.cases(5).rois);
-verifyEmpty(tc,C.cases(6).rois);
+ids=string({C.cases.id});
+verifyEmpty(tc,C.cases(ids=="2026Feb19_inc_sp").rois);
+verifyEmpty(tc,C.cases(ids=="2026Feb19_inc_rswe").rois);
+end
+
+function testFivePercentUsesSamePublishedHomogeneousROI(tc)
+C=read_qmv2_experiment_manifest(tc.TestData.manifest);
+ids=string({C.cases.id});
+for modality=["sp","rswe"]
+    id5="2026Feb27_homo_5perc_"+modality;
+    id10="2026Feb27_homo_10perc_"+modality;
+    five=C.cases(ids==id5);
+    ten=C.cases(ids==id10);
+    verifyEqual(tc,string(five.type),"homogeneous");
+    verifyEqual(tc,string(five.modality),modality);
+    verifyEqual(tc,string(five.relative_path), ...
+        "2026-02-27/"+id5);
+    verifyEqual(tc,string(five.raw_run),string(ten.raw_run));
+    verifyEqual(tc,double(five.frequencies_hz(:)), ...
+        double(ten.frequencies_hz(:)));
+    verifyEqual(tc,reshape(double(five.rois.center_mm),1,[]), ...
+        reshape(double(ten.rois.center_mm),1,[]));
+    verifyEqual(tc,reshape(double(five.rois.size_mm),1,[]), ...
+        [17 15]);
+end
 end
 
 function testPurePlanAndModelArmPreflight(tc)
