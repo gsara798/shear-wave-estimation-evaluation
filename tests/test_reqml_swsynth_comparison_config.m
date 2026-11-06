@@ -31,7 +31,7 @@ function testReduced14OptInAndLegacyCompatibility(testCase)
 legacy=swsynth_comparison_config(ReqmlRoot="/nonexistent/readonly");
 verifyEqual(testCase,numel(legacy.Arms),7);
 verifyEqual(testCase,legacy.analysisRoot, ...
-    fullfile(legacy.outputRoot,"analysis"));
+    fullfile(legacy.outputRoot,"analysis","roi_homo30x30_v2"));
 C=swsynth_comparison_config( ...
     ReqmlRoot="/nonexistent/readonly",Arms="reduced14",StepPixels=5);
 verifyEqual(testCase,C.Arms,"reduced14");
@@ -40,7 +40,7 @@ verifyEqual(testCase,C.ModelPaths, ...
     fullfile("/nonexistent/readonly","training","q0_v5_clean_campaign", ...
     "outputs","reduced14_transfer_bundle_v1","model_bundle.mat"));
 verifyTrue(testCase,contains(C.analysisRoot,"alternatives"));
-verifyEqual(testCase,numel(C.AllArms),9);
+verifyEqual(testCase,numel(C.AllArms),17); % Existing nine + eight opt-in QMV2 arms
 % New arm reuses the *same* frozen regressor on a filtered complex field.
 filtered=swsynth_comparison_config( ...
     ReqmlRoot="/nonexistent/readonly",Arms="reduced14_filtered",StepPixels=5);
@@ -60,10 +60,13 @@ function testRoisAndReferenceTruth(testCase)
 verifyEqual(testCase,numel(r),1);
 verifyEqual(testCase,string(r.name),"center");
 verifyEqual(testCase,double(r.center),[25 25]);
-verifyEqual(testCase,double(r.size),[10 10]);
+verifyEqual(testCase,double(r.size),[30 30]);
+verifyEqual(testCase,double(r.center-r.size/2),[10 10]);
+verifyEqual(testCase,double(r.center+r.size/2),[40 40]);
 verifyEqual(testCase,t,1.8);
 [r,t]=swsynth_comparison_rois("point_homogeneous",3);
 verifyEqual(testCase,numel(r),1);
+verifyEqual(testCase,double(r.size),[30 30]);
 verifyEqual(testCase,t,3);
 [r,t]=swsynth_comparison_rois("plane_bilayer",1.8);
 verifyEqual(testCase,numel(r),2);
