@@ -73,9 +73,68 @@ for id=caseIDs'
         files(end+1,1)=figName; %#ok<AGROW>
         close(fig);
     end
+    caseSpec=C.cases(string({C.cases.id})==id);
+    if isfield(caseSpec,"contrasts") && ~isempty(caseSpec.contrasts)
+        contrastFile=fullfile(directory,"qmv2_inclusion_contrasts.csv");
+        assert(isfile(contrastFile),"ExpQMV2:PlotContrastMissing", ...
+            "Run Stage=analyze to generate contrast data: %s",contrastFile);
+        CT=readtable(contrastFile,TextType="string", ...
+            VariableNamingRule="preserve");
+        for c=unique(string(CT.contrast_name),"stable")'
+            subset=CT(string(CT.contrast_name)==c,:);
+            fig=figure("Visible","off","Color","w", ...
+                "Position",[50 50 1400 650]);
+            tl=tiledlayout(fig,1,2, ...
+                "TileSpacing","compact","Padding","compact");
+            ax=nexttile(tl);hold(ax,"on");
+            cx=nexttile(tl);hold(cx,"on");
+            handles=gobjects(1,nArms);
+            for ai=1:nArms
+                Y=sortrows(subset(string(subset.model)==arms(ai),:), ...
+                    "frequency_hz");
+                assert(~isempty(Y),"ExpQMV2:PlotContrastArms", ...
+                    "Missing %s for model %s.",c,arms(ai));
+                handles(ai)=plot(ax,double(Y.frequency_hz), ...
+                    double(Y.median_contrast_percent),"o", ...
+                    "LineStyle",styles(ai),"Color",colors(ai,:), ...
+                    "LineWidth",1.4,"MarkerSize",5);
+                plot(cx,double(Y.frequency_hz), ...
+                    double(Y.spatial_cnr),"o", ...
+                    "LineStyle",styles(ai),"Color",colors(ai,:), ...
+                    "LineWidth",1.4,"MarkerSize",5);
+            end
+            yline(ax,0,"k:","HandleVisibility","off");
+            yline(cx,0,"k:","HandleVisibility","off");
+            xlabel(ax,"Frequency (Hz)");
+            xlabel(cx,"Frequency (Hz)");
+            ylabel(ax,"Median contrast (%)");
+            ylabel(cx,"Spatial CNR (dimensionless)");
+            title(ax,"Inclusion / background median contrast");
+            title(cx,"Mean difference / pooled spatial SD");
+            for a=[ax cx]
+                xticks(a,unique(double(subset.frequency_hz))');
+                grid(a,"on");box(a,"on");
+            end
+            lg=legend(ax,handles,cellstr(labels), ...
+                "Interpreter","none","Box","off", ...
+                "NumColumns",min(5,nArms));
+            lg.Layout.Tile="south";
+            suffix="";
+            if any(~logical(subset.roi_pair_within_fov))
+                suffix=" | WARNING: partial ROI coverage";
+            end
+            title(tl,id+" | "+c+" | M="+string(C.m)+suffix, ...
+                "Interpreter","none");
+            figName=fullfile(plotDir,"contrast_"+c+ ...
+                "_M"+string(C.m)+".png");
+            exportgraphics(fig,figName,Resolution=160);
+            files(end+1,1)=figName; %#ok<AGROW>
+            close(fig);
+        end
+    end
+
     cols=min(5,nArms);
     nr=ceil(nArms/cols);
-    caseSpec=C.cases(string({C.cases.id})==id);
     for ji=1:height(caseRows)
         job=caseRows(ji,:);
         fig=figure("Visible","off","Color","w", ...
