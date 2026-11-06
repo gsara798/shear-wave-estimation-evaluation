@@ -145,5 +145,9 @@ if run=="auto" || run==""
         run="";
     end
 end
-candidates=join(candidates,", ");
+if isempty(candidates)
+    candidates="";
+else
+    candidates=join(candidates,", ");
+end
 end
