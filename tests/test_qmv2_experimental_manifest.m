@@ -25,6 +25,7 @@ verifyEqual(tc,C.m,2);
 verifyEqual(tc,C.step_pixels,5);
 verifyEqual(tc,C.filter.cs_min_m_s,0.8);
 verifyEqual(tc,C.filter.cs_max_m_s,8);
+verifyEqual(tc,C.roi_min_fov_fraction,0.9);
 end
 
 function testFixedROIsAndConfiguredInclusionPairs(tc)
@@ -113,6 +114,7 @@ C.m=3;
 C.step_pixels=4;
 C.sws_limits=[0.5 5.5];
 C.analysis_version="custom_validation_v3";
+C.roi_min_fov_fraction=0.75;
 C.filter.cs_min_m_s=1.1;
 C.filter.cs_max_m_s=6;
 C.filter.taper_relative=0.08;
@@ -127,6 +129,7 @@ verifyEqual(tc,actual.m,3);
 verifyEqual(tc,actual.step_pixels,4);
 verifyEqual(tc,actual.sws_limits,[0.5 5.5]);
 verifyEqual(tc,actual.analysis_version,"custom_validation_v3");
+verifyEqual(tc,actual.roi_min_fov_fraction,0.75);
 verifyEqual(tc,actual.filter.cs_min_m_s,1.1);
 verifyEqual(tc,actual.filter.cs_max_m_s,6);
 verifyEqual(tc,actual.filter.taper_relative,0.08);
@@ -179,6 +182,8 @@ verifyEqual(tc,X.spatial_cnr(1),2,"AbsTol",1e-12);
 verifyEqual(tc,X.median_contrast_percent(2),45,"AbsTol",1e-12);
 verifyEqual(tc,X.reference_common_pixels(1),12);
 verifyFalse(tc,any(X.roi_pair_within_fov));
+Y=qmv2_inclusion_contrasts(T,rules,0.6);
+verifyTrue(tc,all(Y.roi_pair_within_fov));
 end
 
 function testManifestRejectsOverlappingContrastROIs(tc)
