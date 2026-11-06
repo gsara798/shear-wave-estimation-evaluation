@@ -168,6 +168,64 @@
       ]
     },
     {
+      "id": "2026Feb27_homo_5perc_sp",
+      "relative_path": "2026-02-27/2026Feb27_homo_5perc_sp",
+      "modality": "sp",
+      "type": "homogeneous",
+      "raw_run": "reqml_compare_raw_no_spatial_v1",
+      "raw_file_pattern": "test1_{frequency}Hz.mat",
+      "frequencies_hz": [
+        300,
+        400,
+        500,
+        600
+      ],
+      "remove_svd_modes": 0,
+      "make_isotropic": true,
+      "rois": [
+        {
+          "name": "central",
+          "center_mm": [
+            19,
+            19.25
+          ],
+          "size_mm": [
+            17,
+            15
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2026Feb27_homo_5perc_rswe",
+      "relative_path": "2026-02-27/2026Feb27_homo_5perc_rswe",
+      "modality": "rswe",
+      "type": "homogeneous",
+      "raw_run": "reqml_compare_raw_no_spatial_v1",
+      "raw_file_pattern": "test1_{frequency}Hz.mat",
+      "frequencies_hz": [
+        300,
+        400,
+        500,
+        600
+      ],
+      "remove_svd_modes": 0,
+      "make_isotropic": true,
+      "rois": [
+        {
+          "name": "central",
+          "center_mm": [
+            19,
+            19.25
+          ],
+          "size_mm": [
+            17,
+            15
+          ]
+        }
+      ]
+    },
+    {
       "id": "2026Feb19_inc_sp",
       "relative_path": "2026-02-19/2026Feb19_inc_sp",
       "modality": "sp",
