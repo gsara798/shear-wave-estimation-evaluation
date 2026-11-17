@@ -19,14 +19,18 @@ StudyID = "adaptive_req_final_experimental_v1";
 ModelLabel = "adaptive_req_full21_unfiltered_v1";
 SelectedCaseIDs = strings(1,0);       % empty = all eight
 FrequenciesHz = [300 400 500 600];   % only available processed samples
-M = 2;
+MValues = [1 2 3];                 % evaluate all three analysis windows
 StepPixels = 5;
 UseParallel = true;
 ContinueOnError = true;
 
 %% Verify paths and immutable model release identity
 assert(ismember(Mode,["plan","run"]),"Mode must be 'plan' or 'run'.");
-assert(isscalar(M) && isfinite(M) && M>0,"M must be positive.");
+assert(isnumeric(MValues) && isvector(MValues) && ~isempty(MValues) && ...
+    all(isfinite(MValues)) && all(MValues>0) && ...
+    numel(unique(MValues))==numel(MValues), ...
+    "MValues must be a vector of unique positive finite values.");
+MValues = double(MValues(:).');
 assert(isscalar(StepPixels) && isfinite(StepPixels) && ...
     StepPixels>0 && StepPixels==fix(StepPixels), ...
     "StepPixels must be a positive integer.");
@@ -73,11 +77,13 @@ fprintf("Mode       : %s\n",Mode);
 fprintf("Input run  : %s\n",ProcessedRunName);
 fprintf("Model      : %s\n",ModelFile);
 fprintf("Release    : %s\n",string(releaseReady));
-fprintf("M=%g | step=%g | unfiltered | no quality mask\n\n",M,StepPixels);
+fprintf("M=[%s] | step=%g | unfiltered | no quality mask\n\n", ...
+    strjoin(string(MValues)," "),StepPixels);
 
 %% Read-only observation plan, including missing processed frequencies
 caseColumn = strings(0,1);
 frequencyColumn = zeros(0,1);
+mValueColumn = zeros(0,1);
 sourceColumn = strings(0,1);
 destinationColumn = strings(0,1);
 inputPresentColumn = false(0,1);
@@ -90,24 +96,29 @@ for ii = 1:numel(caseIDs)
     for f0 = FrequenciesHz(:).'
         sampleFile = fullfile(datasetRoot,"processed",ProcessedRunName, ...
             sprintf("%gHz",f0),"wavefield_sample.mat");
-        outputFile = fullfile(datasetRoot,"estimates",StudyID,"REQ-ML", ...
-            ModelLabel,sprintf("%gHz",f0), ...
-            "M"+string(M),"step"+string(StepPixels),"reqml_result.mat");
-        caseColumn(end+1,1) = caseID; %#ok<SAGROW>
-        frequencyColumn(end+1,1) = f0; %#ok<SAGROW>
-        sourceColumn(end+1,1) = sampleFile; %#ok<SAGROW>
-        destinationColumn(end+1,1) = outputFile; %#ok<SAGROW>
-        inputPresentColumn(end+1,1) = isfile(sampleFile); %#ok<SAGROW>
-        existingEstimateColumn(end+1,1) = isfile(outputFile); %#ok<SAGROW>
+        for mValue = MValues
+            outputFile = fullfile(datasetRoot,"estimates",StudyID,"REQ-ML", ...
+                ModelLabel,sprintf("%gHz",f0), ...
+                "M"+string(mValue),"step"+string(StepPixels),"reqml_result.mat");
+            caseColumn(end+1,1) = caseID; %#ok<SAGROW>
+            frequencyColumn(end+1,1) = f0; %#ok<SAGROW>
+            mValueColumn(end+1,1) = mValue; %#ok<SAGROW>
+            sourceColumn(end+1,1) = sampleFile; %#ok<SAGROW>
+            destinationColumn(end+1,1) = outputFile; %#ok<SAGROW>
+            inputPresentColumn(end+1,1) = isfile(sampleFile); %#ok<SAGROW>
+            existingEstimateColumn(end+1,1) = isfile(outputFile); %#ok<SAGROW>
+        end
     end
 end
 
-jobs = table(caseColumn,frequencyColumn,sourceColumn, ...
+jobs = table(caseColumn,frequencyColumn,mValueColumn,sourceColumn, ...
     destinationColumn,inputPresentColumn,existingEstimateColumn, ...
-    VariableNames=["case_id","frequency_hz","sample_file", ...
+    VariableNames=["case_id","frequency_hz","M","sample_file", ...
     "estimate_file","sample_exists","estimate_exists"]);
-disp(jobs(:,["case_id","frequency_hz","sample_exists","estimate_exists"]));
-fprintf("Processed samples: %d/%d\n",nnz(jobs.sample_exists),height(jobs));
+disp(jobs(:,["case_id","frequency_hz","M","sample_exists","estimate_exists"]));
+fprintf("Processed samples: %d/%d acquisitions (%d estimation jobs)\n", ...
+    numel(unique(jobs.sample_file(jobs.sample_exists))), ...
+    numel(unique(jobs.sample_file)),height(jobs));
 if ~releaseReady
     fprintf("Full21 release is incomplete or not present in this checkout:\n");
     for releaseFile = releaseFiles
@@ -170,9 +181,11 @@ validFraction = nan(height(jobs),1);
 for j = 1:height(jobs)
     caseID = jobs.case_id(j);
     frequency = jobs.frequency_hz(j);
+    mValue = jobs.M(j);
     sampleFile = jobs.sample_file(j);
     estimateFile = jobs.estimate_file(j);
-    fprintf("[%d/%d] %s | %g Hz ... ",j,height(jobs),caseID,frequency);
+    fprintf("[%d/%d] %s | %g Hz | M=%g ... ", ...
+        j,height(jobs),caseID,frequency,mValue);
 
     if ~jobs.sample_exists(j)
         status(j) = "missing_sample";
@@ -207,7 +220,7 @@ for j = 1:height(jobs)
             "processing_config",localFileIdentity(runConfigFile), ...
             "processing_manifest",localFileIdentity(sampleManifestFile), ...
             "release",{releaseInfo}, ...
-            "M",M,"step_pixels",StepPixels, ...
+            "M",mValue,"step_pixels",StepPixels, ...
             "filter_arm","unfiltered");
         % Preserve a stable, inspectable inference identity across reruns.
         inference_identity = string(jsonencode(identity)); %#ok<NASGU>
@@ -230,7 +243,7 @@ for j = 1:height(jobs)
 
         result = reqml.predictSWS(sampleFile, ...
             ModelBundle=loaded, ...
-            M=M,StepPixels=StepPixels, ...
+            M=mValue,StepPixels=StepPixels, ...
             UseParallel=UseParallel,RequireTruth=false,Verbose=false);
         % Keep the original predictor outputs, including patch_examples.
         % Stage 03 needs these same features and q predictions for mask scoring.
@@ -247,6 +260,7 @@ for j = 1:height(jobs)
             isfinite(double(result.metadata.frequency_hz)) && ...
             double(result.metadata.frequency_hz)==frequency, ...
             "Saved sample frequency differs from requested frequency %g Hz.",frequency);
+        result.metadata.experimental_M = mValue;
         result.metadata.experimental_case_id = caseID;
         result.metadata.experimental_study_id = StudyID;
         result.metadata.experimental_arm = ModelLabel;
