@@ -169,7 +169,7 @@ for ii = 1:numel(caseIDs)
 end
 
 %% Export a combined summary without changing per-experiment outputs
-S = cell2table(summaryRows,"VariableNames", ...
+S = cell2table(summaryRows,VariableNames= ...
     ["case_id","frequency_hz","status","message","sample_file"]);
 S.case_id = string(S.case_id);
 S.status = string(S.status);
