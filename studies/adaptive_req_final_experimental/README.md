@@ -112,10 +112,11 @@ inputs are used.
 ### Progress diagnostics and timing
 
 The stage-02 script has `Verbose=true` by default. It reports
-`[SETUP 1/3]` through `[SETUP 3/3]`, the observation plan, and four
+`[SETUP 1/3]` through `[SETUP 3/3]`, the observation plan, and three
 `[PREFLIGHT]` checkpoints **before** the first `[1/96]` job.
-This distinguishes slow release inspection, model loading, and predictor
-validation from actual SWS inference. The model is loaded once.
+It no longer calls `whos("-file")` on `req_model.mat`: the standalone
+MAT inspection was redundant. Model loading and validation are performed by
+`reqml.models.loadQ0Model`, once per run, followed by predictor checks.
 
 For every case/frequency/M job, it reports input provenance checks,
 resume checks, inference start/end, validation/save, valid patch
@@ -152,10 +153,10 @@ The inference script does not invoke TEST or verify TEST equivalence itself.
 `reqml.predictSWS` public API accepts an MAT model with variables
 `model`, `model_metadata`, and `predictor_names`.
 The release's distinct `req_model.mat` filename does not establish
-that it uses this legacy structure. The script validates those three
-variables, loads with `reqml.models.loadQ0Model`, and verifies
-21 unique predictor names **before any inference**. If publication
-produces a different format, the script intentionally stops; adapt it
+that it uses this legacy structure. The script delegates bundle structure
+validation to `reqml.models.loadQ0Model` (no separate MAT scan) and checks
+for 21 unique predictor names **before any inference**. If publication
+produces a different format, loading intentionally fails; adapt the script
 to the publisher's actual inference API rather than guessing.
 
 For a dry-run:
