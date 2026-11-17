@@ -1,7 +1,8 @@
 # Adaptive REQ-ML — final experimental evaluation
 
 This directory contains the **new** experimental evaluation workflow for the
-published Adaptive REQ-ML Full21 estimator and quality mask. It is separate
+frozen Adaptive REQ-ML Full21 estimator and quality mask, once publication
+of their bundles and the independent TEST equivalence check finishes. It is separate
 from `studies/reqml_experimental_qmv2` and does not change prior estimates,
 masks, training data, or ROI analyses.
 
