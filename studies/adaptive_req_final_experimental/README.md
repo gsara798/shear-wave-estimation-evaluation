@@ -93,9 +93,109 @@ are produced from saved samples without reprocessing. The EWP run
 configuration is immutable under the same run name; modify `RunName`
 if the processing parameters change.
 
+## Stage 02 — estimate unfiltered SWS with final Full21 (implemented)
+
+Stage 02 deliberately **does not** reprocess IQ, apply a spatial
+filter, train a model, or score the quality mask.
+
+The script is:
+
+```matlab
+run("studies/adaptive_req_final_experimental/run_02_estimate_sws.m")
+```
+
+It is a single `for` sweep over the same eight acquisitions and
+300/400/500/600 Hz. Only existing
+`processed/adaptive_req_final_unfiltered_v1/<frequency>Hz/wavefield_sample.mat`
+inputs are used.
+
+### Preflight before prediction
+
+The default `Mode="plan"` is strictly read-only: it lists the 32
+potential observations, their processed-sample presence and existing
+estimate presence, and whether the final model-release files exist.
+
+The script expects the output of
+`publish_adaptive_req_full21(Mode="publish",ConfirmPublish=true)`
+in `/Users/sara/local/req-ml/models/adaptive_req_full21_v1/`:
+
+- `req_model.mat`
+- `quality_mask.mat`
+- `operating_spec.mat`
+- `deployment_manifest.json`
+
+Only the first file is used for inference. All four are checked as one
+versioned published release; step 03 will use the mask.
+**Run `verify_published_adaptive_req_full21()` before invoking stage 02.**
+The inference script does not invoke TEST or verify TEST equivalence itself.
+
+**Important compatibility point:** the currently reviewed
+`reqml.predictSWS` public API accepts an MAT model with variables
+`model`, `model_metadata`, and `predictor_names`.
+The release's distinct `req_model.mat` filename does not establish
+that it uses this legacy structure. The script validates those three
+variables, loads with `reqml.models.loadQ0Model`, and verifies
+21 unique predictor names **before any inference**. If publication
+produces a different format, the script intentionally stops; adapt it
+to the publisher's actual inference API rather than guessing.
+
+For a dry-run:
+
+```matlab
+% In run_02_estimate_sws.m:
+Mode = "plan";
+```
+
+For a pilot after the release and step 01 are ready:
+
+```matlab
+% Edit settings at top of script:
+Mode = "run";
+SelectedCaseIDs = "2026Feb27_homo_10perc_sp";
+FrequenciesHz = [300 600];
+```
+
+For all eight experiments:
+
+```matlab
+Mode = "run";
+SelectedCaseIDs = strings(1,0);
+FrequenciesHz = [300 400 500 600];
+```
+
+The estimator is called with `M=2`, `StepPixels=5`,
+`UseParallel=true`, and `RequireTruth=false`, using the explicitly
+loaded Full21 model. Estimated `q_map`, `cs_map`,
+`valid_mask`, and `patch_examples` remain together so the
+frozen mask can use the identical patch features later.
+
+Output (one per case/frequency):
+
+```text
+<dataset>/estimates/adaptive_req_final_experimental_v1/REQ-ML/
+  adaptive_req_full21_unfiltered_v1/300Hz/M2/step5/reqml_result.mat
+```
+
+A run-specific report goes to:
+
+```text
+<data-root>/analysis/adaptive_req_final_experimental_v1/
+  estimation_reports/<timestamp>/sws_estimation_summary.csv
+```
+
+Resume behavior checks a saved `inference_identity` recording the
+input and published-model file identities, the model label, M, step,
+and the unfiltered processing run. Matching estimates are reused;
+mismatched estimates are never silently replaced. A partial output is
+flagged rather than overwritten. Missing samples are recorded
+per frequency, and the loop continues unless `ContinueOnError=false`.
+
+This script has been inspected against GitHub's public REQ-ML inference
+API, but **has not been executed on the Mac** and the latest Full21
+publisher source is not yet present on the reviewed GitHub branch.
+
 ## Subsequent stages (not implemented yet)
 
-2. Estimate SWS and predicted quantile using verified, published Full21.
 3. Score the frozen final quality mask without re-fitting.
 4. Generate SWS maps with/without the mask, with/without B-mode overlay;
    fixed SWS color scale 1.5–3.5 m/s, coherent figure template and ROIs.
