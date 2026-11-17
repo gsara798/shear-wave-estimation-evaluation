@@ -301,7 +301,8 @@ for j = 1:height(jobs)
             ModelBundle=loaded, ...
             M=mValue,StepPixels=StepPixels, ...
             UseParallel=UseParallel,RequireTruth=false,Verbose=Verbose);
-        fprintf("    [3/4] Inference completed (%.2f s).\n",toc(inferenceTimer));
+        inferenceElapsed = toc(inferenceTimer);
+        fprintf("    [3/4] Inference completed (%.2f s).\n",inferenceElapsed);
         if Verbose,fprintf("    [4/4] Validating and saving estimate ...\n");end
         saveTimer = tic;
         % Keep the original predictor outputs, including patch_examples.
@@ -335,7 +336,7 @@ for j = 1:height(jobs)
         status(j) = "completed";
         validFraction(j) = nnz(result.valid_mask)/numel(result.valid_mask);
         fprintf("[%d/%d] COMPLETED | %.1f%% valid patches | inference %.2f s | save+validation %.2f s | total %.2f s\n\n", ...
-            j,height(jobs),100*validFraction(j),toc(inferenceTimer),toc(saveTimer),toc(jobTimer));
+            j,height(jobs),100*validFraction(j),inferenceElapsed,toc(saveTimer),toc(jobTimer));
 
     catch ME
         status(j) = "failed";
