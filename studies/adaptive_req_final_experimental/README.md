@@ -104,16 +104,17 @@ The script is:
 run("studies/adaptive_req_final_experimental/run_02_estimate_sws.m")
 ```
 
-It is a single `for` sweep over the same eight acquisitions and
-300/400/500/600 Hz. Only existing
+It is a nested sweep over the same eight acquisitions,
+300/400/500/600 Hz, and **M = 1, 2, 3**. Only existing
 `processed/adaptive_req_final_unfiltered_v1/<frequency>Hz/wavefield_sample.mat`
 inputs are used.
 
 ### Preflight before prediction
 
-The default `Mode="plan"` is strictly read-only: it lists the 32
-potential observations, their processed-sample presence and existing
-estimate presence, and whether the final model-release files exist.
+The default `Mode="plan"` is strictly read-only: it lists the **96
+estimation jobs** (8 experiments × 4 frequencies × 3 M values), their
+processed-sample and existing-estimate availability, and whether the
+final model-release files exist.
 
 The script expects the output of
 `publish_adaptive_req_full21(Mode="publish",ConfirmPublish=true)`
@@ -153,6 +154,7 @@ For a pilot after the release and step 01 are ready:
 Mode = "run";
 SelectedCaseIDs = "2026Feb27_homo_10perc_sp";
 FrequenciesHz = [300 600];
+MValues = [1 2 3];
 ```
 
 For all eight experiments:
@@ -161,19 +163,22 @@ For all eight experiments:
 Mode = "run";
 SelectedCaseIDs = strings(1,0);
 FrequenciesHz = [300 400 500 600];
+MValues = [1 2 3];
 ```
 
-The estimator is called with `M=2`, `StepPixels=5`,
-`UseParallel=true`, and `RequireTruth=false`, using the explicitly
-loaded Full21 model. Estimated `q_map`, `cs_map`,
+The estimator is called separately for `M=1`, `M=2`, and `M=3`
+with `StepPixels=5`, `UseParallel=true`, and `RequireTruth=false`,
+using the same explicitly loaded Full21 model. Estimated `q_map`, `cs_map`,
 `valid_mask`, and `patch_examples` remain together so the
 frozen mask can use the identical patch features later.
 
-Output (one per case/frequency):
+Output (one per case/frequency/M):
 
 ```text
 <dataset>/estimates/adaptive_req_final_experimental_v1/REQ-ML/
+  adaptive_req_full21_unfiltered_v1/300Hz/M1/step5/reqml_result.mat
   adaptive_req_full21_unfiltered_v1/300Hz/M2/step5/reqml_result.mat
+  adaptive_req_full21_unfiltered_v1/300Hz/M3/step5/reqml_result.mat
 ```
 
 A run-specific report goes to:
@@ -188,7 +193,8 @@ input and published-model file identities, the model label, M, step,
 and the unfiltered processing run. Matching estimates are reused;
 mismatched estimates are never silently replaced. A partial output is
 flagged rather than overwritten. Missing samples are recorded
-per frequency, and the loop continues unless `ContinueOnError=false`.
+per frequency/M combination, and the loop continues unless
+`ContinueOnError=false`.
 
 This script has been inspected against GitHub's public REQ-ML inference
 API, but **has not been executed on the Mac** and the latest Full21
