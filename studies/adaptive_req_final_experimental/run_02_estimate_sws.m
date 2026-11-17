@@ -154,7 +154,7 @@ if Mode=="plan"
 end
 
 %% Run preflight. No TEST recomputation or model re-fitting.
-fprintf("[PREFLIGHT 1/4] Checking published release and MATLAB function paths ...\n");
+fprintf("[PREFLIGHT 1/3] Checking published release and MATLAB function paths ...\n");
 preflightTimer = tic;
 assert(releaseReady, ...
     "Full21 publication incomplete. Finish publish_adaptive_req_full21 and verification.");
@@ -167,33 +167,16 @@ assert(~isempty(which("reqml.predictSWS")) && ...
     "REQ-ML inference API not found.");
 assert(~isempty(which("swseval.io.loadReqmlResult")), ...
     "SWSEval result loader not found.");
-fprintf("[PREFLIGHT 1/4] Paths and release verified (%.2f s).\n", ...
+fprintf("[PREFLIGHT 1/3] Paths and release verified (%.2f s).\n", ...
     toc(preflightTimer));
 
-% Current documented REQ-ML public API accepts a Q0-compatible MAT bundle
-% with these variables. The new publisher has a distinct filename:
-% inspect its contents explicitly instead of silently assuming a format.
-fprintf("[PREFLIGHT 2/4] Inspecting MAT variables in Full21 model ...\n");
-inspectTimer = tic;
-fileInfo = whos("-file",char(ModelFile));
-variables = string({fileInfo.name});
-requiredVariables = ["model","model_metadata","predictor_names"];
-missingVariables = setdiff(requiredVariables,variables);
-if Verbose
-    fprintf("[PREFLIGHT 2/4] Found variables: %s\n",strjoin(variables,", "));
-end
-assert(isempty(missingVariables), ...
-    ["Published req_model.mat lacks REQ-ML public-inference variables: %s. " + ...
-     "The Full21 publisher/inference interface must be reconciled before estimating."], ...
-    strjoin(missingVariables,", "));
-fprintf("[PREFLIGHT 2/4] MAT structure checked (%.2f s).\n", ...
-    toc(inspectTimer));
-
-fprintf("[PREFLIGHT 3/4] Loading Full21 model into memory ...\n");
+% loadQ0Model already reads and validates the bundle; avoid an expensive
+% standalone whos("-file") scan of req_model.mat.
+fprintf("[PREFLIGHT 2/3] Loading Full21 model into memory ...\n");
 loadTimer = tic;
 loaded = reqml.models.loadQ0Model(Model=ModelFile,Verbose=Verbose);
-fprintf("[PREFLIGHT 3/4] Full21 loaded (%.2f s).\n",toc(loadTimer));
-fprintf("[PREFLIGHT 4/4] Validating model predictors and provenance ...\n");
+fprintf("[PREFLIGHT 2/3] Full21 loaded (%.2f s).\n",toc(loadTimer));
+fprintf("[PREFLIGHT 3/3] Validating model predictors and provenance ...\n");
 validateTimer = tic;
 predictorNames = string(loaded.predictor_names(:));
 assert(numel(predictorNames)==21 && ...
@@ -206,7 +189,7 @@ if isfield(loaded.model_metadata,"filter_arm")
         "The published model does not declare unfiltered training: %s",filterArm);
 end
 
-fprintf("[PREFLIGHT 4/4] Model validated (%.2f s).\n",toc(validateTimer));
+fprintf("[PREFLIGHT 3/3] Model validated (%.2f s).\n",toc(validateTimer));
 
 % Keep output IDs tied to input/model files AND all versioned release files.
 % The identity is a file-metadata guard, not a cryptographic hash.
