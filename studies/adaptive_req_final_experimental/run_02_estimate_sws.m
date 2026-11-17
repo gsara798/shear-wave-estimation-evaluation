@@ -23,8 +23,16 @@ MValues = [1 2 3];                 % evaluate all three analysis windows
 StepPixels = 5;
 UseParallel = true;
 ContinueOnError = true;
+Verbose = true;                       % detailed stage messages + REQ-ML internals
+
+totalTimer = tic;
+fprintf("\n[START] Adaptive REQ-ML experimental Full21 inference\n");
+fprintf("[START] %s | verbose=%d\n", ...
+    string(datetime("now","Format","yyyy-MM-dd HH:mm:ss")),Verbose);
 
 %% Verify paths and immutable model release identity
+settingsTimer = tic;
+fprintf("[SETUP 1/3] Validating settings and selected experiments ...\n");
 assert(ismember(Mode,["plan","run"]),"Mode must be 'plan' or 'run'.");
 assert(isnumeric(MValues) && isvector(MValues) && ~isempty(MValues) && ...
     all(isfinite(MValues)) && all(MValues>0) && ...
@@ -35,8 +43,12 @@ assert(isscalar(StepPixels) && isfinite(StepPixels) && ...
     StepPixels>0 && StepPixels==fix(StepPixels), ...
     "StepPixels must be a positive integer.");
 
+fprintf("[SETUP 1/3] Settings validated (%.2f s).\n",toc(settingsTimer));
+
 % This path is set by publish_adaptive_req_full21. It is intentionally
 % explicit: never fall back silently to models/current or Reduced14.
+fprintf("[SETUP 2/3] Locating published Full21 release ...\n");
+releaseTimer = tic;
 ReleaseDir = fullfile(ReqMLRoot,"models","adaptive_req_full21_v1");
 ModelFile = fullfile(ReleaseDir,"req_model.mat");
 MaskFile = fullfile(ReleaseDir,"quality_mask.mat");
@@ -44,6 +56,8 @@ OperatingSpecFile = fullfile(ReleaseDir,"operating_spec.mat");
 ReleaseManifestFile = fullfile(ReleaseDir,"deployment_manifest.json");
 releaseFiles = [ModelFile,MaskFile,OperatingSpecFile,ReleaseManifestFile];
 releaseReady = all(isfile(releaseFiles));
+fprintf("[SETUP 2/3] Release files checked: %d/%d present (%.2f s).\n", ...
+    nnz(isfile(releaseFiles)),numel(releaseFiles),toc(releaseTimer));
 
 caseIDs = [
     "2026Feb27_homo_10perc_sp"
@@ -66,11 +80,14 @@ SelectedCaseIDs = string(SelectedCaseIDs);
 assert(all(ismember(SelectedCaseIDs,caseIDs)), ...
     "Unknown SelectedCaseIDs. Check the eight case IDs in the script.");
 
+fprintf("[SETUP 3/3] Resolving SWSEval code paths ...\n");
+pathsTimer = tic;
 % Resolve this SWSEval checkout independently of the MATLAB working folder.
 studyDir = string(fileparts(mfilename("fullpath")));
 evalRoot = string(fileparts(fileparts(studyDir)));
 assert(isfolder(fullfile(evalRoot,"src")), ...
     "Expected SWSEval/src relative to this script: %s",evalRoot);
+fprintf("[SETUP 3/3] Paths validated (%.2f s).\n",toc(pathsTimer));
 
 fprintf("\nAdaptive REQ-ML: final Full21 experimental estimation\n");
 fprintf("Mode       : %s\n",Mode);
@@ -81,6 +98,9 @@ fprintf("M=[%s] | step=%g | unfiltered | no quality mask\n\n", ...
     strjoin(string(MValues)," "),StepPixels);
 
 %% Read-only observation plan, including missing processed frequencies
+fprintf("[PLAN] Scanning 8 datasets x %d frequencies x %d M values ...\n", ...
+    numel(FrequenciesHz),numel(MValues));
+planningTimer = tic;
 caseColumn = strings(0,1);
 frequencyColumn = zeros(0,1);
 mValueColumn = zeros(0,1);
@@ -111,6 +131,7 @@ for ii = 1:numel(caseIDs)
     end
 end
 
+fprintf("[PLAN] %d jobs discovered in %.2f s.\n",numel(caseColumn),toc(planningTimer));
 jobs = table(caseColumn,frequencyColumn,mValueColumn,sourceColumn, ...
     destinationColumn,inputPresentColumn,existingEstimateColumn, ...
     VariableNames=["case_id","frequency_hz","M","sample_file", ...
@@ -127,11 +148,14 @@ if ~releaseReady
 end
 
 if Mode=="plan"
-    fprintf("\nPlan only: no inference or output writing performed.\n");
+    fprintf("\n[PLAN] Read-only plan completed in %.2f s. No inference or writing.\n", ...
+        toc(totalTimer));
     return
 end
 
 %% Run preflight. No TEST recomputation or model re-fitting.
+fprintf("[PREFLIGHT 1/4] Checking published release and MATLAB function paths ...\n");
+preflightTimer = tic;
 assert(releaseReady, ...
     "Full21 publication incomplete. Finish publish_adaptive_req_full21 and verification.");
 assert(isfolder(fullfile(ReqMLRoot,"src")), ...
@@ -143,20 +167,34 @@ assert(~isempty(which("reqml.predictSWS")) && ...
     "REQ-ML inference API not found.");
 assert(~isempty(which("swseval.io.loadReqmlResult")), ...
     "SWSEval result loader not found.");
+fprintf("[PREFLIGHT 1/4] Paths and release verified (%.2f s).\n", ...
+    toc(preflightTimer));
 
 % Current documented REQ-ML public API accepts a Q0-compatible MAT bundle
 % with these variables. The new publisher has a distinct filename:
 % inspect its contents explicitly instead of silently assuming a format.
+fprintf("[PREFLIGHT 2/4] Inspecting MAT variables in Full21 model ...\n");
+inspectTimer = tic;
 fileInfo = whos("-file",char(ModelFile));
 variables = string({fileInfo.name});
 requiredVariables = ["model","model_metadata","predictor_names"];
 missingVariables = setdiff(requiredVariables,variables);
+if Verbose
+    fprintf("[PREFLIGHT 2/4] Found variables: %s\n",strjoin(variables,", "));
+end
 assert(isempty(missingVariables), ...
     ["Published req_model.mat lacks REQ-ML public-inference variables: %s. " + ...
      "The Full21 publisher/inference interface must be reconciled before estimating."], ...
     strjoin(missingVariables,", "));
+fprintf("[PREFLIGHT 2/4] MAT structure checked (%.2f s).\n", ...
+    toc(inspectTimer));
 
-loaded = reqml.models.loadQ0Model(Model=ModelFile);
+fprintf("[PREFLIGHT 3/4] Loading Full21 model into memory ...\n");
+loadTimer = tic;
+loaded = reqml.models.loadQ0Model(Model=ModelFile,Verbose=Verbose);
+fprintf("[PREFLIGHT 3/4] Full21 loaded (%.2f s).\n",toc(loadTimer));
+fprintf("[PREFLIGHT 4/4] Validating model predictors and provenance ...\n");
+validateTimer = tic;
 predictorNames = string(loaded.predictor_names(:));
 assert(numel(predictorNames)==21 && ...
     all(strlength(predictorNames)>0) && ...
@@ -168,12 +206,18 @@ if isfield(loaded.model_metadata,"filter_arm")
         "The published model does not declare unfiltered training: %s",filterArm);
 end
 
+fprintf("[PREFLIGHT 4/4] Model validated (%.2f s).\n",toc(validateTimer));
+
 % Keep output IDs tied to input/model files AND all versioned release files.
 % The identity is a file-metadata guard, not a cryptographic hash.
+fprintf("[RUN] Preparing release-file identities ...\n");
+identityTimer = tic;
 releaseInfo = cell(size(releaseFiles));
 for k = 1:numel(releaseFiles)
     releaseInfo{k} = localFileIdentity(releaseFiles(k));
 end
+fprintf("[RUN] Release identities prepared (%.2f s).\n",toc(identityTimer));
+fprintf("[RUN] Starting %d estimation jobs.\n\n",height(jobs));
 
 status = strings(height(jobs),1);
 message = strings(height(jobs),1);
@@ -184,8 +228,12 @@ for j = 1:height(jobs)
     mValue = jobs.M(j);
     sampleFile = jobs.sample_file(j);
     estimateFile = jobs.estimate_file(j);
-    fprintf("[%d/%d] %s | %g Hz | M=%g ... ", ...
+    jobTimer = tic;
+    fprintf("[%d/%d] START %s | %g Hz | M=%g\n", ...
         j,height(jobs),caseID,frequency,mValue);
+    if Verbose
+        fprintf("    [INPUT] %s\n",sampleFile);
+    end
 
     if ~jobs.sample_exists(j)
         status(j) = "missing_sample";
@@ -199,6 +247,8 @@ for j = 1:height(jobs)
 
     try
         % Confirm provenance of the actual sample, not merely its folder.
+        if Verbose,fprintf("    [1/4] Validating EWP processing provenance ...\n");end
+        checkTimer = tic;
         runConfigFile = fullfile(fileparts(fileparts(sampleFile)),"run_config.json");
         sampleManifestFile = fullfile(fileparts(sampleFile),"processing_manifest.json");
         assert(isfile(runConfigFile) && isfile(sampleManifestFile), ...
@@ -211,6 +261,10 @@ for j = 1:height(jobs)
             isfield(processingConfig,"remove_svd_modes") && ...
             double(processingConfig.remove_svd_modes)==0, ...
             "Input run is not verified as unfiltered with SVD=0: %s",runConfigFile);
+        if Verbose
+            fprintf("    [1/4] Input validated (%.2f s).\n",toc(checkTimer));
+            fprintf("    [2/4] Checking result identity/resume state ...\n");
+        end
         identity = struct( ...
             "study_id",StudyID,"case_id",caseID, ...
             "frequency_hz",frequency, ...
@@ -231,7 +285,7 @@ for j = 1:height(jobs)
                 "Existing result has a different input, model or configuration: %s", ...
                 estimateFile);
             status(j) = "reused";
-            fprintf("reused\n");
+            fprintf("[%d/%d] REUSED (%.2f s)\n\n",j,height(jobs),toc(jobTimer));
             continue
         end
 
@@ -241,10 +295,15 @@ for j = 1:height(jobs)
         assert(~isfile(partialFile), ...
             "Interrupted partial output exists; inspect it before retry: %s",partialFile);
 
+        fprintf("    [3/4] REQ-ML inference starting (M=%g); loading wavefield, extracting spectral features, predicting q/SWS ...\n",mValue);
+        inferenceTimer = tic;
         result = reqml.predictSWS(sampleFile, ...
             ModelBundle=loaded, ...
             M=mValue,StepPixels=StepPixels, ...
-            UseParallel=UseParallel,RequireTruth=false,Verbose=false);
+            UseParallel=UseParallel,RequireTruth=false,Verbose=Verbose);
+        fprintf("    [3/4] Inference completed (%.2f s).\n",toc(inferenceTimer));
+        if Verbose,fprintf("    [4/4] Validating and saving estimate ...\n");end
+        saveTimer = tic;
         % Keep the original predictor outputs, including patch_examples.
         % Stage 03 needs these same features and q predictions for mask scoring.
         assert(isstruct(result) && ...
@@ -275,12 +334,14 @@ for j = 1:height(jobs)
         assert(ok,"Failed to publish completed MAT: %s",moveMessage);
         status(j) = "completed";
         validFraction(j) = nnz(result.valid_mask)/numel(result.valid_mask);
-        fprintf("completed | %.1f%% valid patches\n",100*validFraction(j));
+        fprintf("[%d/%d] COMPLETED | %.1f%% valid patches | inference %.2f s | save+validation %.2f s | total %.2f s\n\n", ...
+            j,height(jobs),100*validFraction(j),toc(inferenceTimer),toc(saveTimer),toc(jobTimer));
 
     catch ME
         status(j) = "failed";
         message(j) = string(ME.message);
-        fprintf("FAILED: %s\n",ME.message);
+        fprintf("[%d/%d] FAILED after %.2f s: %s\n\n", ...
+            j,height(jobs),toc(jobTimer),ME.message);
         if ~ContinueOnError,rethrow(ME);end
     end
 end
@@ -299,6 +360,7 @@ fprintf("\nInference report: %s\n",summaryFile);
 fprintf("Completed: %d | reused: %d | missing input: %d | failed: %d\n", ...
     nnz(status=="completed"),nnz(status=="reused"), ...
     nnz(status=="missing_sample"),nnz(status=="failed"));
+fprintf("[DONE] Total script time: %.2f s.\n",toc(totalTimer));
 
 %% Local file-provenance helper
 function spec = localFileIdentity(filename)
