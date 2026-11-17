@@ -109,6 +109,24 @@ It is a nested sweep over the same eight acquisitions,
 `processed/adaptive_req_final_unfiltered_v1/<frequency>Hz/wavefield_sample.mat`
 inputs are used.
 
+### Progress diagnostics and timing
+
+The stage-02 script has `Verbose=true` by default. It reports
+`[SETUP 1/3]` through `[SETUP 3/3]`, the observation plan, and four
+`[PREFLIGHT]` checkpoints **before** the first `[1/96]` job.
+This distinguishes slow release inspection, model loading, and predictor
+validation from actual SWS inference. The model is loaded once.
+
+For every case/frequency/M job, it reports input provenance checks,
+resume checks, inference start/end, validation/save, valid patch
+fraction, and elapsed times. The internal `reqml.predictSWS`
+`Verbose` option is also enabled. Internal REQ-ML messages identify
+feature extraction and q/SWS prediction stages, but they do not report
+per-window progress or separate elapsed times for those internal phases.
+
+Set `Verbose=false` near the start of the script to reduce detailed
+sub-step messages while retaining main checkpoint/job progress lines.
+
 ### Preflight before prediction
 
 The default `Mode="plan"` is strictly read-only: it lists the **96
