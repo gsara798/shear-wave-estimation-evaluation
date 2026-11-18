@@ -115,8 +115,9 @@ The stage-02 script has `Verbose=true` by default. It reports
 `[SETUP 1/3]` through `[SETUP 3/3]`, the observation plan, and three
 `[PREFLIGHT]` checkpoints **before** the first `[1/96]` job.
 It no longer calls `whos("-file")` on `req_model.mat`: the standalone
-MAT inspection was redundant. Model loading and validation are performed by
-`reqml.models.loadQ0Model`, once per run, followed by predictor checks.
+MAT inspection was redundant. The Full21-specific loader validates the
+published regression model and operating specification, once per run,
+followed by predictor checks.
 
 For every case/frequency/M job, it reports input provenance checks,
 resume checks, inference start/end, validation/save, valid patch
@@ -149,15 +150,19 @@ versioned published release; step 03 will use the mask.
 **Run `verify_published_adaptive_req_full21()` before invoking stage 02.**
 The inference script does not invoke TEST or verify TEST equivalence itself.
 
-**Important compatibility point:** the currently reviewed
-`reqml.predictSWS` public API accepts an MAT model with variables
-`model`, `model_metadata`, and `predictor_names`.
-The release's distinct `req_model.mat` filename does not establish
-that it uses this legacy structure. The script delegates bundle structure
-validation to `reqml.models.loadQ0Model` (no separate MAT scan) and checks
-for 21 unique predictor names **before any inference**. If publication
-produces a different format, loading intentionally fails; adapt the script
-to the publisher's actual inference API rather than guessing.
+**Final Full21 compatibility:** the published `req_model.mat`
+contains `model` and `model_info`, not the legacy Q0 fields
+`model_metadata` and `predictor_names`. A separate
+`load_adaptive_req_full21_sws_bundle.m` helper reads the frozen
+`operating_spec.mat`, release manifest and the Full21 regressor, checks
+the 21 ordered predictors, the unfiltered TRAIN provenance, model ID,
+clip range and tree configuration, then supplies a validated
+`ModelBundle` to the unchanged `reqml.predictSWS` physical REQ
+pipeline. **No models are retrained or rewritten.** The helper loads
+only the final REQ regressor (not the large classifier); the original
+`quality_mask.mat` will be used in stage 03. The model may take time to
+load on MATLAB, but it is loaded only once before the estimation loop.
+The obsolete call to `reqml.models.loadQ0Model` has been removed.
 
 For a dry-run:
 
