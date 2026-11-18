@@ -8,14 +8,17 @@
 % The original VALIDATION cutoff is kept. Additional cutoffs are ONLY
 % visual/coverage sensitivity diagnostics; NOT a new validated policy.
 %
-% Mode="plan"    : print sample provenance/checkpoint availability only
-% Mode="run"     : estimate raw + donut, score same frozen mask, analyze
-% Mode="analyze" : read existing pilot estimates/masks, replot/reanalyze
+% CompareFilter=false (DEFAULT): cutoff-only from SAVED unfiltered risk scores
+%   Mode="plan" checks saved frozen mask, Mode="run" analyzes and plots.
+% CompareFilter=true (OPTIONAL FUTURE STUDY): paired raw vs fixed donut
+%   Mode="plan" prints source provenance, Mode="run" infers/scores/analyzes,
+%   Mode="analyze" reads the existing paired pilot maps.
 %
 % All outputs are confined to a new versioned pilot folder.
 
 %% Editable settings
 Mode="plan";  % "plan", "run", "analyze"
+CompareFilter=false;  % DEFAULT: cutoff-only on saved unfiltered Full21 mask
 DataRoot="/Users/sara/local/experimental-data-reorganized";
 ReqMLRoot="/Users/sara/local/req-ml";
 CaseID="2026Feb27_homo_5perc_rswe";
@@ -30,6 +33,21 @@ UseParallel=true;
 Verbose=true;
 SaveFigures=true;
 Visible=false;
+
+% First isolate the effect of the cutoff. This branch reads ONLY
+% stage-03's already-scored unfiltered mask: no filter manifest, no model
+% loading, no inference and no rewriting frozen mask outputs.
+if ~CompareFilter
+    cutoffMode=Mode;
+    if cutoffMode=="analyze",cutoffMode="run";end
+    cutoffReport=run_full21_cutoff_only( ...
+        Mode=cutoffMode,DataRoot=DataRoot, ...
+        CaseID=CaseID,CaseDate=CaseDate,FrequencyHz=FrequencyHz, ...
+        M=M,StepPixels=StepPixels, ...
+        ExploratoryCutoffs=ExploratoryCutoffs, ...
+        SaveFigures=SaveFigures,Visible=Visible); %#ok<NASGU>
+    return
+end
 
 %% Resolve the source selected by the ORIGINAL filter manifest
 clock=tic;
