@@ -386,6 +386,13 @@ FrequenciesHz = [300 400 500 600];
 MValues = [1 2 3];
 ```
 
+If a plot run reports **0/96 stage-02 estimates**, stage 04 now stops
+before rendering with an actionable error, the exact expected MAT path,
+and the latest stage-02 estimation status breakdown if available.
+In that case run `run_02_estimate_sws.m` with `Mode="run"` and confirm
+its report contains `completed` or `reused` jobs. The 32 processed
+wavefield samples from stage 01 are not the same as 96 SWS estimate files.
+
 By default `Mode="plan"` is read-only and lists missing inputs;
 `Overwrite=false` reuses existing figures; `RequireMask=false`
 allows originals while step 03 is incomplete. Set `RequireMask=true`
