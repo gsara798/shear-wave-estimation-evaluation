@@ -224,6 +224,89 @@ This script has been inspected against GitHub's public REQ-ML inference
 API, but **has not been executed on the Mac** and the latest Full21
 publisher source is not yet present on the reviewed GitHub branch.
 
+## Stage 03 updated: 85% VALIDATION frozen operating point (2026-11-18)
+
+The current experimental quality-mask policy is **85% target retention
+on synthetic VALIDATION**, using the exactly frozen cutoff
+**0.2300157481407481** in the REQ-ML contract
+`training/adaptive_req_final_v1/quality_mask/outputs/operating_85pct_posthoc_v2/frozen_operating_contract.mat`.
+The TEST secondary evaluation reused all 5,400 saved held-out observations:
+86.50% retained, 1.9410% retained MAPE. Because the 85% choice followed
+inspection of experimental phantoms, it is a *post-hoc/secondary*
+operating point; it is not a newly independently confirmed TEST policy.
+
+**No new q regressor or classifier has been trained or published.**
+The underlying published release remains
+`models/adaptive_req_full21_v1/` with original cutoff ~0.14764.
+Stage 03 now reads the separate 85% contract, checks that its classifier
+and regressor IDs match the existing release, and saves 85%-policy masks
+under a **different folder**. It does not change either model's
+`operating_spec.mat` or `deployment_manifest.json`.
+
+At the top of `run_03_apply_quality_mask.m` the defaults are:
+
+```matlab
+Mode = "plan";
+MaskPolicy = "validation85_posthoc";
+MaskVersion = "quality_mask_full21_val85_posthoc_v2";
+StepPixels = 3;
+SelectedCaseIDs = strings(1,0); % all eight cases
+FrequenciesHz = [300 400 500 600];
+MValues = [1 2 3];
+```
+
+After pulling **SWSEval** and **REQ-ML**, run synthetic checks:
+
+```matlab
+runtests("studies/adaptive_req_final_experimental/test_step_03_quality_mask.m")
+runtests("studies/adaptive_req_final_experimental/test_step_03_mask_policy85.m")
+```
+
+Check the plan with `Mode="plan"`, then switch only `Mode="run"`.
+You may first select one case and `MValues=2` for a pilot, then restore
+all eight cases, frequencies and M values.
+
+**Efficient score reuse:** for each case/Hz/M, stage 03 checks the
+original 80%-cutoff `risk_mask_result.mat` against the exact original
+source estimate and published Full21 file identities. When valid, it
+reuses its existing risk-score map and only recomputes keep/reject
+decisions at 0.2300157481407481 — **no classifier load or inference**.
+If an original score map is missing, the script loads the original
+published classifier once, scores the saved stage-02 features and applies
+the new cutoff; no q/SWS inference or wavefield processing occurs.
+Mismatched source/checkpoints are rejected, not silently overwritten.
+
+Example 85%-policy output:
+
+```text
+<dataset>/analysis/adaptive_req_final_experimental_v1/
+  M2_step3/quality_mask_full21_val85_posthoc_v2/masks/
+    adaptive_req_full21_unfiltered_v1/500Hz/risk_mask_result.mat
+```
+
+The original 80%-policy results remain at:
+
+```text
+<dataset>/analysis/adaptive_req_final_experimental_v1/
+  M2_step3/quality_mask_full21_locked_v1/masks/
+    adaptive_req_full21_unfiltered_v1/500Hz/risk_mask_result.mat
+```
+
+If the original 80% policy must be reproduced, change BOTH settings to
+`MaskPolicy="original80"` and
+`MaskVersion="quality_mask_full21_locked_v1"`.
+
+**Stage 04:** `run_04_plot_sws_maps.m` now defaults to
+`MaskVersion="quality_mask_full21_val85_posthoc_v2"`,
+`FigureVersion="paper_figures_full21_val85_posthoc_v2"`,
+`StepPixels=3`, `RequireMask=true`. It verifies the policy metadata
+and renders the new 85%-policy SWS maps in an **independent** figure
+directory. The old 80% maps/figures stay unchanged. Do not interpret
+more retained experimental pixels as proven improved SWS accuracy
+without independent phantom reference measurements.
+
+---
+
 ## Stage 03 — frozen Full21 quality mask (implemented)
 
 The quality mask is scored on **stage-02 saved predictions**, not on
