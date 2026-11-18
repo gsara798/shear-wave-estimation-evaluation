@@ -142,7 +142,7 @@ if isequal(double(R.patch_examples.map_ix(:)), ...
         double(er.map_iz),double(er.map_ix));
     use=logical(A.original_valid_mask(linear))& ...
         logical(B.original_valid_mask(linear));
-    for feature=shared'
+    for feature=shared(:).'
         if ismember(feature,exclude),continue;end
         u=er.(char(feature));
         v=ef.(char(feature));
