@@ -121,6 +121,41 @@ jobs=table(ids,freq,ms,samples,originalFiles,maskFiles,figureDirs, ...
 fprintf("[PLAN] %d figure jobs | stage 02 ready: %d | stage 03 ready: %d\n", ...
     height(jobs),nnz(jobs.estimate_exists),nnz(jobs.mask_exists));
 disp(jobs(:,["case_id","frequency_hz","M","estimate_exists","mask_exists"]));
+
+% All 96 missing is an upstream inference/manifest issue, NOT a figure
+% rendering success. Show an actionable path and stage-02 status report.
+if height(jobs)>0 && ~any(jobs.estimate_exists)
+    exampleFile=jobs.estimate_file(1);
+    fprintf(2,"[BLOCKED] No stage-02 SWS estimate files were found.\n");
+    fprintf(2,"[BLOCKED] Example expected path:\n  %s\n",exampleFile);
+    reportCandidates=dir(fullfile(DataRoot,"analysis",StudyID, ...
+        "estimation_reports","*","sws_estimation_summary.csv"));
+    if ~isempty(reportCandidates)
+        [~,order]=sort([reportCandidates.datenum],"descend");
+        latest=reportCandidates(order(1));
+        latestFile=string(fullfile(latest.folder,latest.name));
+        fprintf(2,"[BLOCKED] Latest stage-02 estimation report:\n  %s\n",latestFile);
+        try
+            previous=readtable(latestFile,TextType="string");
+            if ismember("status",string(previous.Properties.VariableNames))
+                [names,~,group]=unique(string(previous.status));
+                counts=accumarray(group,1);
+                for a=1:numel(names)
+                    fprintf(2,"[BLOCKED] Stage 02 status %s: %d\n",names(a),counts(a));
+                end
+            end
+        catch MEreport
+            fprintf(2,"[BLOCKED] Cannot read report summary: %s\n",MEreport.message);
+        end
+    else
+        fprintf(2,"[BLOCKED] No stage-02 estimation report found under the expected analysis root.\n");
+    end
+    fprintf(2,"[BLOCKED] Run stage 02 with Mode=\"run\" and inspect its completed/reused counts.\n");
+    if Mode=="run"
+        error("AdaptiveREQ:FiguresNeedEstimates", ...
+            "Stage 04 cannot render figures: all %d stage-02 estimates are missing.",height(jobs));
+    end
+end
 if Mode=="plan"
     fprintf("[PLAN] Read-only finished (%.2f s).\n",toc(totalTimer));
     return
