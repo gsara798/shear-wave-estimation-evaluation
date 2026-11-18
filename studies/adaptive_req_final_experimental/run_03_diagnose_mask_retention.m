@@ -11,7 +11,7 @@ Mode = "run";                      % "plan" or "run"
 DataRoot = "/Users/sara/local/experimental-data-reorganized";
 StudyID = "adaptive_req_final_experimental_v1";
 ModelLabel = "adaptive_req_full21_unfiltered_v1";
-MaskVersion = "quality_mask_full21_locked_v1";
+MaskVersion = "quality_mask_full21_val85_posthoc_v2";
 SelectedCaseIDs = strings(1,0);   % empty = all eight
 FrequenciesHz = [300 400 500 600];
 MValues = [1 2 3];
@@ -78,7 +78,8 @@ end
 rows=cell(0,1);
 failures=cell(0,4);
 figurePaths=strings(0,1);
-reportRoot=fullfile(DataRoot,"analysis",StudyID,"mask_retention_diagnostics");
+reportRoot=fullfile(DataRoot,"analysis",StudyID, ...
+    "mask_retention_diagnostics",MaskVersion);
 stamp=string(datetime("now","Format","yyyyMMdd_HHmmss_SSS"));
 reportDir=fullfile(reportRoot,stamp);
 assert(~isfolder(reportDir), ...
