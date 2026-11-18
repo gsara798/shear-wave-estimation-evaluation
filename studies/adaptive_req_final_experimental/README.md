@@ -333,6 +333,38 @@ before launching all 96 jobs. Observed retention may differ from the
 
 
 
+### Diagnostic of excessive experimental masking (read-only)
+
+`run_03_diagnose_mask_retention.m` analyzes the **saved stage-03**
+`risk_mask_result.mat` files; it does not reopen wavefields, call the
+classifier, or alter the frozen VALIDATION cutoff. `StepPixels=3`
+matches the current experimental sweep. The report
+`mask_retention_by_roi.csv` gives FOV and physical-ROI results per
+case/frequency/M: original valid/retained/rejected/unscored counts,
+retained percentage, score percentiles, SWS mean and median before/after
+masking and the percentage of SWS above the **3.5 m/s display maximum**.
+Optional PNG figures show score histograms with the **frozen cutoff**
+and retention as a function of original SWS (descriptive only).
+
+For a quick pilot, edit the script:
+
+```matlab
+Mode = "run";
+StepPixels = 3;
+SelectedCaseIDs = ["2026Feb27_homo_10perc_rswe";"2026Feb19_inc_rswe"];
+FrequenciesHz = [300 600];
+MValues = 2;
+MakeDiagnosticFigures = true;
+run("studies/adaptive_req_final_experimental/run_03_diagnose_mask_retention.m")
+```
+
+Do **not** assume 80% experimental retention: the threshold targeted 80%
+on synthetic VALIDATION. High experimental score/low retention may
+indicate a domain shift, but without an independent experimental SWS
+reference the report measures **selection bias**, not true estimation
+accuracy. Keep the locked result as the primary mask; do not choose a
+new deployment cutoff using these phantom maps alone.
+
 ## Stage 04 — paper SWS maps and physical B-mode overlays (implemented)
 
 Script: `run_04_plot_sws_maps.m`. It scans the same eight experiments,
