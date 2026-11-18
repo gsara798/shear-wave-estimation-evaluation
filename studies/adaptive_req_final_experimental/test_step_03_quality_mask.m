@@ -28,7 +28,7 @@ end
 
 function testMissingFrozenFeatureRejected(testCase)
 [R,L]=fixtures();
-R.patch_examples.feature_01=[];
+R.patch_examples.feature_01=ones(4,2);
 verifyError(testCase,@()score_adaptive_req_full21_quality_mask(R,L), ...
     "AdaptiveREQ:MaskFeatureShape");
 end
