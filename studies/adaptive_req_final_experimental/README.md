@@ -234,6 +234,17 @@ of **SWS APE > 10%** (it is not a calibrated probability). The risk
 threshold was fixed from **independent VALIDATION**, not from phantom
 results or TEST.
 
+**Quantile provenance (important fix):** in the REQ-ML feature
+extractor, `patch_examples.q_pred` stores the **local non-ML REQ**
+baseline (`q_local_req`), *not* Full21's predicted quantile. Stage 02
+stores the fitted Full21 quantile in `q_map` and
+`patch_predictions.q_pred`. Stage 03 uses `q_map` as the mask's 22nd
+input, with an exact row-aligned cross-check against
+`patch_predictions.q_pred`. Never compare Full21 `q_map` against
+`patch_examples.q_pred`: doing so caused all 96 step-3 mask jobs to
+fail with a false `AdaptiveREQ:MaskQMismatch` error (2026-11-17).
+No model, score cutoff or input wavefield changed in this fix.
+
 The stage-03 script and helpers are:
 
 - `run_03_apply_quality_mask.m` — one loop across all eight experiments,
