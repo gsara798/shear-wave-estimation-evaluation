@@ -150,7 +150,7 @@ if height(jobs)>0 && ~any(jobs.estimate_exists)
     else
         fprintf(2,"[BLOCKED] No stage-02 estimation report found under the expected analysis root.\n");
     end
-    fprintf(2,"[BLOCKED] Run stage 02 with Mode=\"run\" and inspect its completed/reused counts.\n");
+    fprintf(2,"[BLOCKED] Run stage 02 with Mode='run' and inspect its completed/reused counts.\n");
     if Mode=="run"
         error("AdaptiveREQ:FiguresNeedEstimates", ...
             "Stage 04 cannot render figures: all %d stage-02 estimates are missing.",height(jobs));
