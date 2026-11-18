@@ -19,6 +19,23 @@ verifyTrue(testCase,isnan(Q.risk_score_map(2,2)));
 verifyEqual(testCase,Q.q_map,R.q_map);
 end
 
+function testLocalBaselineQuantileIsNotFull21(testCase)
+[R,L]=fixtures();
+% The feature extractor stores the local non-ML REQ baseline in E.q_pred.
+% It need not match Full21 q_map and must never be used by the risk mask.
+verifyNotEqual(testCase,double(R.patch_examples.q_pred(1)), ...
+    double(R.patch_predictions.q_pred(1)));
+Q=score_adaptive_req_full21_quality_mask(R,L);
+verifyEqual(testCase,Q.q_map,R.q_map);
+end
+
+function testTamperedFull21QuantileRejected(testCase)
+[R,L]=fixtures();
+R.patch_predictions.q_pred(1)=.99;
+verifyError(testCase,@()score_adaptive_req_full21_quality_mask(R,L), ...
+    "AdaptiveREQ:MaskQMismatch");
+end
+
 function testWrongQModelRejected(testCase)
 [R,L]=fixtures();
 R.metadata.model_provenance_id="not_the_frozen_model";
@@ -55,8 +72,13 @@ E=table([1;2;1;2],[1;1;2;2], ...
 for k=1:21
     E.(char(names(k)))=0.25*ones(4,1);
 end
+% A legacy q_pred in the feature table means local REQ baseline q,
+% NOT the fitted Full21 quantile; these values are intentionally different.
+E.q_pred=0.5*ones(4,1);
 % Window (2,2) has a finite base SWS but a nonfinite feature -> unscored.
 E.feature_01(4)=NaN;
+% These entries map in E row order to the q_map (MATLAB column major).
+P=table([.4;.6;NaN;.7],VariableNames="q_pred");
 R=struct( ...
     "cs_map",[2.0 2.4;NaN 3.0], ...
     "q_map",[0.4 0.6;NaN 0.7], ...
@@ -64,6 +86,7 @@ R=struct( ...
     "x_mm",[10 15], ...
     "z_mm",[5;10], ...
     "patch_examples",E, ...
+    "patch_predictions",P, ...
     "metadata",struct( ...
         "model_provenance_id","frozen_full21_fixture", ...
         "experimental_mask_applied",false));
