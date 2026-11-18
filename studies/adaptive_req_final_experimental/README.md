@@ -224,7 +224,103 @@ This script has been inspected against GitHub's public REQ-ML inference
 API, but **has not been executed on the Mac** and the latest Full21
 publisher source is not yet present on the reviewed GitHub branch.
 
-## Subsequent stages (not implemented yet)
+## Stage 03 — frozen Full21 quality mask (implemented)
+
+The quality mask is scored on **stage-02 saved predictions**, not on
+new wavefield processing or recomputed q. The frozen classifier takes
+the original 21 ordered Full21 predictors **plus saved predicted q** as
+the last (22nd) input. The positive-class ensemble score measures risk
+of **SWS APE > 10%** (it is not a calibrated probability). The risk
+threshold was fixed from **independent VALIDATION**, not from phantom
+results or TEST.
+
+The stage-03 script and helpers are:
+
+- `run_03_apply_quality_mask.m` — one loop across all eight experiments,
+  four frequencies and `MValues=[1 2 3]` (96 mask jobs)
+- `load_adaptive_req_full21_quality_mask.m` — reads only the saved
+  classifier, operating spec and manifest; **never loads the giant q
+  regressor again**
+- `score_adaptive_req_full21_quality_mask.m` — uses exactly the
+  saved `patch_examples`, `q_map`, `cs_map` and map-center indices
+- `test_step_03_quality_mask.m` — fast synthetic structural tests
+
+To inspect inputs without loading the classifier or saving anything:
+
+```matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+% In run_03_apply_quality_mask.m:
+Mode = "plan";
+run("studies/adaptive_req_final_experimental/run_03_apply_quality_mask.m")
+```
+
+For a pilot, change the settings near the beginning of the script:
+
+```matlab
+Mode = "run";
+SelectedCaseIDs = "2026Feb27_homo_10perc_sp";
+FrequenciesHz = [300 600];
+MValues = [1 2 3];
+```
+
+For the full eight-case experiment:
+
+```matlab
+Mode = "run";
+SelectedCaseIDs = strings(1,0);
+FrequenciesHz = [300 400 500 600];
+MValues = [1 2 3];
+```
+
+Run the synthetic unit tests first if MATLAB's Statistics and Machine
+Learning Toolbox is available:
+
+```matlab
+runtests("studies/adaptive_req_final_experimental/test_step_03_quality_mask.m")
+```
+
+Only finite valid SWS windows with finite classifier inputs are scored.
+The saved quality result contains four disjoint statuses:
+
+1. **Retained**: valid, scored and risk score ≤ frozen cutoff
+2. **Rejected**: valid, scored and risk score > frozen cutoff
+3. **Unscored**: originally valid SWS but no finite risk score
+4. **Invalid**: originally invalid SWS (outside the denominator)
+
+`retained_mask`, `rejected_mask` and `unscored_mask` partition the
+originally valid set. An unscored pixel is **never** treated as retained.
+The output also preserves `original_sws_map`, `masked_sws_map`,
+`risk_score_map`, `q_map`, physical `x_mm/z_mm` coordinates,
+original/retained/rejected counts and the exact cutoff.
+
+For example, a case at 300 Hz and M=2 saves:
+
+```text
+<dataset>/analysis/adaptive_req_final_experimental_v1/
+  M2_step5/quality_mask_full21_locked_v1/masks/
+    adaptive_req_full21_unfiltered_v1/300Hz/risk_mask_result.mat
+```
+
+A CSV summary of each run is saved separately:
+
+```text
+<data-root>/analysis/adaptive_req_final_experimental_v1/
+  quality_mask_reports/<timestamp>/quality_mask_summary.csv
+```
+
+Mask outputs never overwrite stage-02 estimates. On rerun,
+`mask_identity` checks the source estimate, original inference identity,
+all published release files, the M/step and the frozen cutoff. Compatible
+checkpoints are reused; mismatches fail rather than overwriting anything.
+A missing estimate is reported and skipped by default.
+
+**Validation status:** logic was inspected against the frozen final model
+and earlier QMV2 scoring conventions; no experimental MATLAB execution
+was available in GitHub. Run the synthetic tests and start with a pilot
+before launching all 96 jobs. Observed retention may differ from the
+80% VALIDATION target: do not force it experimentally.
+
+
 
 3. Score the frozen final quality mask without re-fitting.
 4. Generate SWS maps with/without the mask, with/without B-mode overlay;
