@@ -19,6 +19,18 @@ verifyTrue(testCase,isnan(Q.risk_score_map(2,2)));
 verifyEqual(testCase,Q.q_map,R.q_map);
 end
 
+function testRun03MaskIdentityIsDefinedBeforeSave(testCase)
+% Protect against a MATLAB workspace-name mismatch at checkpoint save.
+script=fullfile(fileparts(mfilename("fullpath")), ...
+    "run_03_apply_quality_mask.m");
+source=fileread(script);
+definition='mask_identity=string(jsonencode(struct(';
+saveCall='save(partial,"quality_result","mask_identity","-v7.3")';
+verifyTrue(testCase,contains(source,definition));
+verifyTrue(testCase,contains(source,saveCall));
+verifyFalse(testCase,contains(source,'maskIdentity='));
+end
+
 function testLocalBaselineQuantileIsNotFull21(testCase)
 [R,L]=fixtures();
 % The feature extractor stores the local non-ML REQ baseline in E.q_pred.
