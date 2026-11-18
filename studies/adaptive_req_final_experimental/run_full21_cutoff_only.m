@@ -197,7 +197,11 @@ if options.SaveFigures
         xlabel(ax,"x (mm)");ylabel(ax,"z (mm)");
         xtickformat(ax,"%.1f");ytickformat(ax,"%.1f");
         hold(ax,"on");
-        for roi=C.rois
+        % MATLAB iterates over COLUMNS in a for loop; C.rois is often
+        % a column struct array for bilayer/inclusion. Select each scalar
+        % ROI explicitly to avoid a comma-separated list of center_mm.
+        for roiIndex=1:numel(C.rois)
+            roi=C.rois(roiIndex);
             c=double(roi.center_mm(:));
             d=double(roi.size_mm(:));
             rectangle(ax,"Position", ...
