@@ -322,13 +322,104 @@ before launching all 96 jobs. Observed retention may differ from the
 
 
 
-3. Score the frozen final quality mask without re-fitting.
-4. Generate SWS maps with/without the mask, with/without B-mode overlay;
-   fixed SWS color scale 1.5–3.5 m/s, coherent figure template and ROIs.
-5. Analyze physical ROIs and SWS-vs-frequency plots with spatial
-   variability error bars, retaining both combined and individual figures.
+## Stage 04 — paper SWS maps and physical B-mode overlays (implemented)
 
-The ROIs and display policy will be taken from the previously defined
-QMV2 experimental manifest, except that final inclusion plots will
-highlight only core and background ROIs. No changes will be made
-to the older study outputs.
+Script: `run_04_plot_sws_maps.m`. It scans the same eight experiments,
+300/400/500/600 Hz and **M=1,2,3** (96 potential figure jobs). It reads
+the immutable stage-02 `result` and stage-03 `quality_result` files:
+no IQ processing, new q prediction, mask retraining or model loading.
+
+Output formats are **PNG (300 dpi), PDF, and MATLAB FIG**, with
+`swseval.viz.mapColormap()` (the existing REQ paper SWS palette),
+**fixed CLim 1.5–3.5 m/s**, colorbar ticks 1.5, 2.0, ..., 3.5
+and consistent **one-decimal axis/colorbar formatting**.
+
+Per experiment / frequency / M, outputs include:
+
+- `individual/sws_original_plain.*`
+- `individual/sws_masked_plain.*` (when mask exists)
+- `individual/sws_original_bmode_rois.*` (when B-mode aligns)
+- `individual/sws_masked_bmode_rois.*` (when mask and B-mode align)
+- `combined/sws_comparison_2x2.*` (all four arrangements, shared
+  colorbar), or `combined/sws_comparison_1x2_no_bmode.*`
+  when physical B-mode alignment cannot be verified
+
+The original and masked maps always use identical physical coordinates
+and limits; no interpolation or cosmetic filling of rejected regions is
+performed. ROI rectangles appear on maps, while panel labels (a–d)
+are unobtrusive and plots have no manuscript titles.
+
+**ROI provenance:** `adaptive_req_final_case_rois.m` reads the exact
+previously reviewed `../reqml_experimental_qmv2/experiment_manifest.example.json`.
+Homogeneous phantoms have **central** only; bilayer has **soft** and
+**hard**; inclusion retains **inclusion_core** and **background_ref**
+(the exploratory `inclusion_large` ROI is excluded). This avoids
+silently choosing new physical ROIs.
+
+**B-mode provenance:** `load_adaptive_req_final_bmode.m` locates the
+exact raw Verasonics MAT using EWP's
+`processed/<run>/<Hz>/processing_manifest.json.source_file`.
+It accepts both `IQBmodeData` and `BmodeIQ`, loads only the 2D
+B-mode IQ and `dinf.dx/dz`, checks the raw `IQData1` *dimensions*
+without loading the IQ movie, and requires physically consistent
+image/map extents. Invalid or missing B-mode is **never** fabricated
+from the wavefield. The script emits plain maps and reports an absent
+overlay; `RequireBmode=true` instead makes it a per-job failure.
+The B-mode is logarithmically normalized from −60 to 0 dB, as in EWP.
+
+To start with a pilot (edit script settings):
+
+```matlab
+Mode = "run";
+SelectedCaseIDs = "2026Feb27_homo_10perc_sp";
+FrequenciesHz = 300;
+MValues = 2;
+run("studies/adaptive_req_final_experimental/run_04_plot_sws_maps.m")
+```
+
+Then run all experiments with:
+
+```matlab
+Mode = "run";
+SelectedCaseIDs = strings(1,0);
+FrequenciesHz = [300 400 500 600];
+MValues = [1 2 3];
+```
+
+By default `Mode="plan"` is read-only and lists missing inputs;
+`Overwrite=false` reuses existing figures; `RequireMask=false`
+allows originals while step 03 is incomplete. Set `RequireMask=true`
+to insist on paired comparison figures.
+
+Example outputs:
+
+```text
+<dataset>/analysis/adaptive_req_final_experimental_v1/
+  M2_step5/paper_figures_full21_v1/
+    adaptive_req_full21_unfiltered_v1/300Hz/
+      individual/
+      combined/
+```
+
+Each run saves a non-destructive status report at
+`<data-root>/analysis/adaptive_req_final_experimental_v1/figure_reports/<timestamp>/sws_figure_summary.csv`.
+
+Unit/smoke tests for ROI geometry, B-mode grid validation and figure
+exports:
+
+```matlab
+runtests("studies/adaptive_req_final_experimental/test_step_04_paper_figures.m")
+```
+
+**Validation status:** the implementation has been checked against
+SWSEval, EWP, and earlier experimental ROI code in GitHub. It has **not**
+yet been run with the local MATLAB experimental MAT files. Pilot one
+case before producing the full set.
+
+## Stage 05 — physical ROI statistics (planned)
+
+Analyze physical ROIs and plot SWS versus frequency for all M values
+and both original/masked maps; show spatial SD as **spatial variability**,
+not as a confidence interval for the mean. Inclusion/background contrast
+will be descriptive unless an independent reference is supplied.
+
