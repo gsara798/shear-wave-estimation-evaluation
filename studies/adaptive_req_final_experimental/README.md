@@ -224,6 +224,139 @@ This script has been inspected against GitHub's public REQ-ML inference
 API, but **has not been executed on the Mac** and the latest Full21
 publisher source is not yet present on the reviewed GitHub branch.
 
+## Stage 05 — SWS versus excitation frequency (paper plots)
+
+Use `run_05_plot_sws_vs_frequency.m` for frequency-dependent
+**ROI mean SWS ± spatial standard deviation**, using saved stage-02
+(unmasked) and frozen-85%-policy stage-03 (masked) maps. This is a
+separate plotting analysis: **no wavefield processing, no ML inference,
+no classifier scoring, and no threshold selection**. The pixel sample
+SD describes within-ROI spatial variation, **not a confidence interval,
+SEM or sample-to-sample repeatability**.
+
+Colors follow the previously published REQ paper (PMB 2026,
+DOI 10.1088/1361-6560/ae99a8), with the shared
+`swseval.viz.figureTheme()` palette:
+
+| Physical gelatin material | Display name | Color |
+|---|---|---|
+| 5% | soft | **red** |
+| 10% | hard | **blue** |
+
+The original physical ROI boundaries from
+`adaptive_req_final_case_rois.m` are reused without alteration.
+Homogeneous `central` is displayed as soft or hard by the formulation.
+Bilayer `soft`/`hard` are unchanged. In the inclusion phantom,
+`inclusion_core` is displayed as **hard** (10%) and
+`background_ref` as **soft** (5%), consistent with the REQ
+supplementary fabrication protocol; these mapping labels never
+modify the geometry or the saved original ROI names. The existing
+modality label **Four-side clustered** (formerly RSWE) is reused;
+the folder/manifest keeps the legacy `rswe` key.
+
+For **each M**, excitation modality (single push or four-side
+clustered) and phantom type, there are **six separate figures**:
+original soft, original hard, original both; masked soft, masked hard,
+masked both. Homogeneous soft and hard are combined across the
+corresponding 5% and 10% acquisitions of the same modality, whereas
+bilayer and inclusion combine their two physical ROIs. When all
+8 × 4 × 3 input combinations are available, that gives **108 figures**
+(3 phantom types × 2 modalities × 3 M × 2 states × 3 views),
+each exported as PNG/PDF by default. Missing/zero-retention ROI
+points are flagged as undefined (NaN), never plotted as zero or filled
+by frequency interpolation. CSV tables retain pixel counts and
+coverage for every observed case/frequency/M/ROI/state.
+
+### Mechanical reference bands: important distinction
+
+The published REQ paper constructed the **mechanical reference band**
+from six independently tested gelatin specimens for **each**
+formulation. At *each excitation frequency*, the lower/upper limits
+are respectively the minimum/maximum SLS-predicted shear-wave phase
+speed among the six samples. The paper's text provides
+**approximately 1.8–2.0 m/s (5%)** and **2.8–3.2 m/s (10%)** over
+300–600 Hz; it does not tabulate the exact eight frequency-specific
+extrema. The numbers **1.82 ± 0.01** and **3.30 ± 0.10 m/s** in the
+main text are **REQ estimates**, *not* measured mechanical reference
+limits.
+
+By default, Stage 05 draws **the approximate published textual
+envelopes** as shaded bands with dashed boundaries, and records their
+status as `approximate_main_text_envelope`. It displays a warning
+and saves `mechanical_reference_used.csv`; do **not** claim that
+these are the exact six-sample SLS extrema from Fig. 8.
+
+For *exact* paper reference bands, provide a CSV made from the
+original six-specimen SLS data with exactly these columns:
+
+```csv
+frequency_hz,material,lower_m_s,upper_m_s
+300,soft,<measured_min_5pct>,<measured_max_5pct>
+400,soft,<measured_min_5pct>,<measured_max_5pct>
+500,soft,<measured_min_5pct>,<measured_max_5pct>
+600,soft,<measured_min_5pct>,<measured_max_5pct>
+300,hard,<measured_min_10pct>,<measured_max_10pct>
+400,hard,<measured_min_10pct>,<measured_max_10pct>
+500,hard,<measured_min_10pct>,<measured_max_10pct>
+600,hard,<measured_min_10pct>,<measured_max_10pct>
+```
+
+Values in angle brackets are **placeholders**, not numeric data.
+Set `ReferenceCSV` to that real file; the script validates one
+bound per material/frequency and uses the resulting **frequency-varying
+SLS envelopes** without substituting estimates. It marks that source
+`exact_six_sample_extrema`. For publication, replace the default
+approximation with the original SLS output.
+
+### Run
+
+```matlab
+cd("/Users/sara/local/shear-wave-estimation-evaluation")
+t=runtests("studies/adaptive_req_final_experimental/test_step_05_sws_frequency.m");
+assert(all([t.Passed]))
+run("studies/adaptive_req_final_experimental/run_05_plot_sws_vs_frequency.m")
+```
+
+The new script defaults to **Mode="plan"**, checks the 96 saved
+estimate/mask locations and is read-only. Then edit:
+
+```matlab
+Mode="run";
+StepPixels=3;
+MValues=[1 2 3];
+FrequenciesHz=[300 400 500 600];
+MaskVersion="quality_mask_full21_val85_posthoc_v2";
+RequireMask=true;
+FigureFormats=["png","pdf"];
+ReferenceCSV=""; % approximate paper text only; see exact CSV above
+```
+
+For a pilot, set `MValues=2` and restrict
+`SelectedCaseIDs` to the relevant physical cases, then restore
+all cases. Results and data-provenance manifests are saved under
+a **new timestamped directory**:
+
+```text
+<data_root>/analysis/adaptive_req_final_experimental_v1/
+  sws_frequency_full21_val85_v1/<timestamp>/
+    input_manifest.csv
+    roi_sws_frequency_statistics.csv
+    mechanical_reference_used.csv
+    figures/figure_manifest.csv
+    figures/<phantom>/<sp|rswe>/M<M>/<original|masked>/
+      sws_vs_frequency_soft.{png,pdf}
+      sws_vs_frequency_hard.{png,pdf}
+      sws_vs_frequency_both.{png,pdf}
+```
+
+**SWS reference figures are not generated or modified by Stage 04.**
+The new program never writes stage-02 or stage-03 MAT data and does not
+alter the former 80% mask or its figures. If some cases are missing,
+the input manifest states which ones; investigate missing inputs before
+making claims about complete phantom comparisons.
+
+---
+
 ## Stage 03 updated: 85% VALIDATION frozen operating point (2026-11-18)
 
 The current experimental quality-mask policy is **85% target retention
