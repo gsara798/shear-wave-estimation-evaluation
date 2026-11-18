@@ -466,6 +466,68 @@ SWSEval, EWP, and earlier experimental ROI code in GitHub. It has **not**
 yet been run with the local MATLAB experimental MAT files. Pilot one
 case before producing the full set.
 
+## First pilot: cutoff only, no spatial filtering (implemented)
+
+The default `run_05_filter_cutoff_pilot.m` configuration is now
+`CompareFilter=false`. This branch calls
+`run_full21_cutoff_only.m` and reads ONLY the existing unfiltered Full21
+stage-03 `risk_mask_result.mat`. No `filter_manifest.mat`, filtered
+wavefield, re-estimation of SWS, q model or quality-mask classifier is
+needed. The first experiment is `2026Feb27_homo_5perc_rswe` at 500 Hz,
+`M=2` and `StepPixels=3`.
+
+```matlab
+% In run_05_filter_cutoff_pilot.m:
+Mode="run";
+CompareFilter=false;
+CaseID="2026Feb27_homo_5perc_rswe";
+FrequencyHz=500;
+M=2;
+StepPixels=3;
+ExploratoryCutoffs=[.20 .24 .30 .40];
+run("studies/adaptive_req_final_experimental/run_05_filter_cutoff_pilot.m")
+```
+
+Or call the helper directly with named arguments:
+
+```matlab
+run_full21_cutoff_only(Mode="run",StepPixels=3, ...
+    FrequencyHz=500,M=2);
+```
+
+The diagnostic verifies stored mask identity and confirms that the saved
+labels equal the classification from the **frozen VALIDATION cutoff**.
+Only afterwards does it apply alternative cutoffs to the saved risk
+scores. It writes a fresh timestamped folder:
+
+```text
+<dataset>/analysis/adaptive_req_final_experimental_v1/
+  cutoff_only_full21_exploratory_v1/M2_step3/500Hz/reports/<timestamp>/
+    retention_vs_cutoff_by_roi.csv
+    sws_cutoff_sweep.png
+    risk_scores_and_retention.png
+```
+
+CSV rows contain FOV and physical-ROI retained/rejected/unscored counts,
+coverage, mean, median and spatial SD of SWS for the frozen and
+exploratory thresholds. The plots show original and retained maps,
+risk-score distribution and ROI-specific cutoff/retention curves. Original
+SWS and mask MATs are never overwritten. All exploratory cutoffs are
+**unvalidated sensitivity analyses**, not a revised deployment policy.
+The existing Full21 classifier's risk score is not a calibrated error
+probability, and retaining more pixels does not demonstrate better
+accuracy.
+
+Fast synthetic tests:
+
+```matlab
+runtests("studies/adaptive_req_final_experimental/test_step_05_cutoff_only.m")
+```
+
+To revisit the spatial filter later, explicitly set
+`CompareFilter=true`, which selects the original manifest-verified
+paired raw/donut branch below.
+
 ## Controlled filter + cutoff pilot (2026-11-18)
 
 The previous QMV2 mask studies demonstrated that risk-score distributions
