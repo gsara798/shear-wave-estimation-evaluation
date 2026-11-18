@@ -258,9 +258,22 @@ MValues = [1 2 3];
 After pulling **SWSEval** and **REQ-ML**, run synthetic checks:
 
 ```matlab
-runtests("studies/adaptive_req_final_experimental/test_step_03_quality_mask.m")
-runtests("studies/adaptive_req_final_experimental/test_step_03_mask_policy85.m")
+t = runtests("studies/adaptive_req_final_experimental/test_step_03_mask_policy85.m");
+assert(all([t.Passed]))
+t = runtests("studies/adaptive_req_final_experimental/test_step_03_quality_mask.m");
+assert(all([t.Passed]))
 ```
+
+**2026-11-18 regression-test fix:** the structural mask tests now use
+`MockAdaptiveReqFull21RiskClassifier`, a deterministic test-only class
+that implements the same `ClassNames` / `predict` interface. They do
+**not** call `fitctree` or train any machine-learning model. This avoids
+repeated licensing-service checkout failures (MathWorks Error 15 /
+`-15.3`) in synthetic tests. The helper is never used by stage 03
+experimental inference. If original 80%-policy score checkpoints are
+available, stage 03 re-thresholds without calling the trained classifier;
+if scores are missing, computing new scores with the real classifier may
+still need working MATLAB licensing.
 
 Check the plan with `Mode="plan"`, then switch only `Mode="run"`.
 You may first select one case and `MValues=2` for a pilot, then restore
