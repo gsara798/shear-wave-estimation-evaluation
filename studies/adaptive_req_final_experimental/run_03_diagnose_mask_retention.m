@@ -41,7 +41,11 @@ if isempty(SelectedCaseIDs),SelectedCaseIDs=cases';end
 SelectedCaseIDs=string(SelectedCaseIDs);
 assert(all(ismember(SelectedCaseIDs,cases)), ...
     "AdaptiveREQ:MaskDiagnosticCaseID","Unknown case ID.");
-jobs=cell(0,5);
+jobIDs=strings(0,1);
+jobHz=zeros(0,1);
+jobM=zeros(0,1);
+jobPaths=strings(0,1);
+jobExists=false(0,1);
 for i=1:numel(cases)
     id=cases(i);
     if ~ismember(id,SelectedCaseIDs),continue;end
@@ -52,17 +56,16 @@ for i=1:numel(cases)
                 "M"+string(m)+"_step"+string(StepPixels), ...
                 MaskVersion,"masks",ModelLabel, ...
                 sprintf("%gHz",hz),"risk_mask_result.mat");
-            jobs(end+1,:)={id,hz,m,f,isfile(f)}; %#ok<SAGROW>
+            jobIDs(end+1,1)=id; %#ok<SAGROW>
+            jobHz(end+1,1)=hz; %#ok<SAGROW>
+            jobM(end+1,1)=m; %#ok<SAGROW>
+            jobPaths(end+1,1)=f; %#ok<SAGROW>
+            jobExists(end+1,1)=isfile(f); %#ok<SAGROW>
         end
     end
 end
-J=cell2table(jobs,VariableNames= ...
-    ["case_id","frequency_hz","M","mask_file","exists"]);
-J.case_id=string(J.case_id);
-J.frequency_hz=cell2mat(J.frequency_hz);
-J.M=cell2mat(J.M);
-J.mask_file=string(J.mask_file);
-J.exists=cell2mat(J.exists);
+J=table(jobIDs,jobHz,jobM,jobPaths,jobExists, ...
+    VariableNames=["case_id","frequency_hz","M","mask_file","exists"]);
 fprintf("[RETENTION PLAN] %d jobs, %d saved quality masks found.\n", ...
     height(J),nnz(J.exists));
 disp(J(:,["case_id","frequency_hz","M","exists"]));
