@@ -1,0 +1,309 @@
+%% Adaptive REQ-ML: controlled Full21 raw-vs-fixed-donut pilot.
+% Uses the EXISTING qmv2_global_donut_0p8_8_v1 wavefield and the exact
+% unfiltered source recorded in its filter_manifest.mat. No IQ processing.
+%
+% A single FROZEN unfiltered-trained Full21 q model and FROZEN risk model
+% are evaluated on BOTH wavefields. Applying the unfiltered-trained model
+% to donut is EXPLORATORY, and may be out of the training distribution.
+% The original VALIDATION cutoff is kept. Additional cutoffs are ONLY
+% visual/coverage sensitivity diagnostics; NOT a new validated policy.
+%
+% Mode="plan"    : print sample provenance/checkpoint availability only
+% Mode="run"     : estimate raw + donut, score same frozen mask, analyze
+% Mode="analyze" : read existing pilot estimates/masks, replot/reanalyze
+%
+% All outputs are confined to a new versioned pilot folder.
+
+%% Editable settings
+Mode="plan";  % "plan", "run", "analyze"
+DataRoot="/Users/sara/local/experimental-data-reorganized";
+ReqMLRoot="/Users/sara/local/req-ml";
+CaseID="2026Feb27_homo_5perc_rswe";
+CaseDate="2026-02-27";
+FrequencyHz=500;
+FilteredRunName="qmv2_global_donut_0p8_8_v1";
+M=2;
+StepPixels=3;
+PilotVersion="full21_filter_cutoff_pilot_v1";
+ExploratoryCutoffs=[.20 .24 .30 .40];  % diagnostic ONLY; locked cutoff kept
+UseParallel=true;
+Verbose=true;
+SaveFigures=true;
+Visible=false;
+
+%% Resolve the source selected by the ORIGINAL filter manifest
+clock=tic;
+fprintf("\n[START] Paired Full21 raw/donut quality-mask pilot\n");
+assert(ismember(Mode,["plan","run","analyze"]), ...
+    "AdaptiveREQ:FilterPilotMode","Mode must be plan, run, or analyze.");
+assert(M>0 && isfinite(M) && isscalar(M) && ...
+    StepPixels>0 && StepPixels==fix(StepPixels), ...
+    "AdaptiveREQ:FilterPilotWindow","Invalid M/StepPixels.");
+assert(isscalar(FrequencyHz) && FrequencyHz>0, ...
+    "AdaptiveREQ:FilterPilotFrequency","Invalid FrequencyHz.");
+studyDir=string(fileparts(mfilename("fullpath")));
+evalRoot=string(fileparts(fileparts(studyDir)));
+caseRoot=fullfile(DataRoot,CaseDate,CaseID);
+filteredFolder=fullfile(caseRoot,"processed",FilteredRunName, ...
+    sprintf("%gHz",FrequencyHz));
+filteredSample=fullfile(filteredFolder,"wavefield_sample.mat");
+filterManifest=fullfile(filteredFolder,"filter_manifest.mat");
+releaseDir=fullfile(ReqMLRoot,"models","adaptive_req_full21_v1");
+releaseFiles=[
+    fullfile(releaseDir,"req_model.mat")
+    fullfile(releaseDir,"quality_mask.mat")
+    fullfile(releaseDir,"operating_spec.mat")
+    fullfile(releaseDir,"deployment_manifest.json")
+];
+pilotRoot=fullfile(caseRoot,"analysis", ...
+    "adaptive_req_final_experimental_v1",PilotVersion, ...
+    "M"+string(M)+"_step"+string(StepPixels),sprintf("%gHz",FrequencyHz));
+
+fprintf("[PLAN] filtered wavefield: %s | exists %d\n", ...
+    filteredSample,isfile(filteredSample));
+fprintf("[PLAN] original filter manifest: %s | exists %d\n", ...
+    filterManifest,isfile(filterManifest));
+fprintf("[PLAN] Full21 release: %d/%d files\n", ...
+    nnz(isfile(releaseFiles)),numel(releaseFiles));
+
+% Full source identity is essential: an arbitrarily selected unfiltered
+% wavefield could differ in acquisition/temporal processing/resampling.
+rawSample="";
+filterIdentity=struct();
+if isfile(filterManifest)
+    B=load(filterManifest,"identity","signature");
+    assert(isfield(B,"identity") && isstruct(B.identity) && ...
+        isfield(B.identity,"source") && ...
+        string(B.identity.filter_type)=="global_complex_fft_donut" && ...
+        double(B.identity.cs_min_m_s)==.8 && ...
+        double(B.identity.cs_max_m_s)==8 && ...
+        isfinite(double(B.identity.taper_relative)), ...
+        "AdaptiveREQ:FilterPilotProvenance", ...
+        "Expected prior QMV2 0.8-8 m/s global FFT donut manifest.");
+    filterIdentity=B.identity;
+    rawSample=string(B.identity.source);
+    if isfile(rawSample)
+        sourceInfo=dir(rawSample);
+        assert(double(sourceInfo.bytes)==double(B.identity.source_bytes) && ...
+            abs(double(sourceInfo.datenum)-double(B.identity.source_datenum))<1e-8, ...
+            "AdaptiveREQ:FilterPilotSourceChanged", ...
+            "Filtered sample's original input changed since filtering.");
+    end
+    fprintf("[PLAN] matching unfiltered source: %s | exists %d\n", ...
+        rawSample,isfile(rawSample));
+else
+    fprintf("[PLAN] Cannot prove which unfiltered field generated this donut.\n");
+end
+
+arms=["raw","fixed_donut"];
+sources=[rawSample,filteredSample];
+estimateFiles=[
+    fullfile(pilotRoot,"estimates","raw","reqml_result.mat")
+    fullfile(pilotRoot,"estimates","fixed_donut","reqml_result.mat")
+];
+maskFiles=[
+    fullfile(pilotRoot,"masks","raw","risk_mask_result.mat")
+    fullfile(pilotRoot,"masks","fixed_donut","risk_mask_result.mat")
+];
+fprintf("[PLAN] Raw estimate: %d | donut estimate: %d\n", ...
+    isfile(estimateFiles(1)),isfile(estimateFiles(2)));
+fprintf("[PLAN] Raw mask: %d | donut mask: %d\n", ...
+    isfile(maskFiles(1)),isfile(maskFiles(2)));
+fprintf("[PLAN] Pilot root: %s\n",pilotRoot);
+if Mode=="plan"
+    fprintf("[PLAN] Read-only; no inference or files written (%.2f s).\n",toc(clock));
+    return
+end
+
+assert(isfile(filterManifest) && isfile(filteredSample) && ...
+    isfile(rawSample), ...
+    "AdaptiveREQ:FilterPilotMissingInput", ...
+    "The original source + filtered pair recorded in filter_manifest.mat is required.");
+assert(all(isfile(releaseFiles)) && isfolder(fullfile(ReqMLRoot,"src")) ...
+    && isfolder(fullfile(evalRoot,"src")), ...
+    "AdaptiveREQ:FilterPilotRequirements","Missing published Full21 or source code.");
+addpath(fullfile(ReqMLRoot,"src"),"-begin");
+addpath(fullfile(evalRoot,"src"),"-begin");
+addpath(studyDir,"-begin");
+assert(~isempty(which("reqml.predictSWS")) && ...
+    ~isempty(which("score_adaptive_req_full21_quality_mask")) && ...
+    ~isempty(which("analyze_full21_filter_cutoff_pair")), ...
+    "AdaptiveREQ:FilterPilotFunctions","Required REQ-ML/SWSEval helpers missing.");
+
+% First confirm physical sample comparability without any model loading.
+fprintf("[PREFLIGHT] Verifying both wavefields share the original grid ...\n");
+S=load(rawSample,"wavefield_sample");
+T=load(filteredSample,"wavefield_sample");
+assert(isfield(S,"wavefield_sample") && isfield(T,"wavefield_sample"), ...
+    "AdaptiveREQ:FilterPilotSampleSchema","Both files must contain wavefield_sample.");
+U=S.wavefield_sample;
+V=T.wavefield_sample;
+assert(isfield(U,"coordinates") && isfield(V,"coordinates") && ...
+    isfield(U,"wavefield") && isfield(V,"wavefield") && ...
+    isfield(U.wavefield,"data_zx") && isfield(V.wavefield,"data_zx") && ...
+    isequal(size(U.wavefield.data_zx),size(V.wavefield.data_zx)) && ...
+    isequal(double(U.coordinates.dx_m),double(V.coordinates.dx_m)) && ...
+    isequal(double(U.coordinates.dz_m),double(V.coordinates.dz_m)) && ...
+    double(U.wavefield.frequency_hz)==FrequencyHz && ...
+    double(V.wavefield.frequency_hz)==FrequencyHz && ...
+    isfield(V,"provenance") && ...
+    isfield(V.provenance,"qmv2_filter"), ...
+    "AdaptiveREQ:FilterPilotIncompatibleSamples", ...
+    "Raw and filtered wavefields differ in grid/frequency or filtering provenance.");
+if isfield(U,"provenance")
+    assert(~isfield(U.provenance,"qmv2_filter"), ...
+        "AdaptiveREQ:FilterPilotDoubleFilter", ...
+        "The documented raw sample is already tagged as filtered.");
+end
+assert(isfield(V.provenance.qmv2_filter,"source") && ...
+    string(V.provenance.qmv2_filter.source)==rawSample, ...
+    "AdaptiveREQ:FilterPilotSourceMismatch", ...
+    "The filtered sample does not reference this original wavefield.");
+assert(any(U.wavefield.data_zx(:)~=V.wavefield.data_zx(:)), ...
+    "AdaptiveREQ:FilterPilotNoFilterEffect", ...
+    "Filtered wavefield equals its input; no filter effect to compare.");
+clear S T U V
+
+if Mode=="run"
+    fprintf("[RUN] Estimating SWS with frozen unfiltered-trained Full21 model.\n");
+    needInference=~all(isfile(estimateFiles));
+    if needInference
+        fprintf("[RUN] Loading frozen Full21 regression model ONCE ...\n");
+        loaded=load_adaptive_req_full21_sws_bundle( ...
+            ReleaseDirectory=releaseDir,Verbose=Verbose);
+    end
+    releaseIdentity=cell(numel(releaseFiles),1);
+    for k=1:numel(releaseFiles)
+        releaseIdentity{k}=localPilotFileIdentity(releaseFiles(k));
+    end
+    for a=1:2
+        source=sources(a);
+        dest=estimateFiles(a);
+        id=string(jsonencode(struct( ...
+            "pilot_version",PilotVersion,"case_id",CaseID, ...
+            "frequency_hz",FrequencyHz,"M",M,"step_pixels",StepPixels, ...
+            "filter_arm",arms(a),"source",localPilotFileIdentity(source), ...
+            "filter_manifest",localPilotFileIdentity(filterManifest), ...
+            "published_release",{releaseIdentity})));
+        if isfile(dest)
+            old=load(dest,"inference_identity");
+            assert(isfield(old,"inference_identity") && ...
+                string(old.inference_identity)==id, ...
+                "AdaptiveREQ:FilterPilotEstimateStale", ...
+                "Existing pilot estimate is stale; do not overwrite %s.",dest);
+            fprintf("[RUN] %s inference reused.\n",arms(a));
+            continue
+        end
+        if Verbose
+            fprintf("[RUN] Inference %d/2: %s (%s)\n",a,arms(a),source);
+        end
+        result=reqml.predictSWS(source,ModelBundle=loaded, ...
+            M=M,StepPixels=StepPixels, ...
+            UseParallel=UseParallel,RequireTruth=false,Verbose=Verbose);
+        assert(double(result.metadata.frequency_hz)==FrequencyHz && ...
+            double(result.metadata.M)==M && ...
+            double(result.metadata.step_pixels)==StepPixels && ...
+            nnz(result.valid_mask)>0, ...
+            "AdaptiveREQ:FilterPilotInference", ...
+            "Model result did not match expected acquisition/window.");
+        result.metadata.experimental_mask_applied=false;
+        result.metadata.pilot_version=PilotVersion;
+        result.metadata.pilot_case_id=CaseID;
+        result.metadata.pilot_arm=arms(a);
+        result.metadata.pilot_matched_raw_source=rawSample;
+        inference_identity=id; %#ok<NASGU>
+        folder=string(fileparts(dest));
+        if ~isfolder(folder),mkdir(folder);end
+        partial=dest+".partial.mat";
+        assert(~isfile(partial),"AdaptiveREQ:FilterPilotPartial", ...
+            "Incomplete estimate checkpoint exists: %s",partial);
+        save(partial,"result","inference_identity","-v7.3");
+        [ok,msg]=movefile(partial,dest);
+        assert(ok,"AdaptiveREQ:FilterPilotWrite", ...
+            "Cannot publish estimate: %s",msg);
+        fprintf("[RUN] %s inference saved.\n",arms(a));
+    end
+    if needInference,clear loaded;end
+
+    % Score BOTH arms with the SAME frozen classifier; no re-training.
+    fprintf("[RUN] Loading frozen Full21 mask ONCE ...\n");
+    release=load_adaptive_req_full21_quality_mask( ...
+        ReleaseDirectory=releaseDir,Verbose=Verbose);
+    for a=1:2
+        source=estimateFiles(a);
+        target=maskFiles(a);
+        saved=load(source,"result","inference_identity");
+        mask_identity=string(jsonencode(struct( ...
+            "pilot_version",PilotVersion,"arm",arms(a), ...
+            "estimate",localPilotFileIdentity(source), ...
+            "inference_identity",string(saved.inference_identity), ...
+            "mask_cutoff_frozen",double(release.cutoff), ...
+            "mask_file",localPilotFileIdentity(release.mask_file))));
+        if isfile(target)
+            old=load(target,"mask_identity","quality_result");
+            assert(isfield(old,"mask_identity") && ...
+                string(old.mask_identity)==mask_identity && ...
+                isfield(old,"quality_result"), ...
+                "AdaptiveREQ:FilterPilotMaskStale", ...
+                "Existing pilot mask is stale; do not overwrite %s.",target);
+            fprintf("[RUN] %s risk scores reused.\n",arms(a));
+            continue
+        end
+        fprintf("[RUN] Scoring %s quality risk ...\n",arms(a));
+        quality_result=score_adaptive_req_full21_quality_mask( ...
+            saved.result,release); %#ok<NASGU>
+        folder=string(fileparts(target));
+        if ~isfolder(folder),mkdir(folder);end
+        partial=target+".partial.mat";
+        assert(~isfile(partial), ...
+            "AdaptiveREQ:FilterPilotPartial", ...
+            "Incomplete mask checkpoint exists: %s",partial);
+        save(partial,"quality_result","mask_identity","-v7.3");
+        [ok,msg]=movefile(partial,target);
+        assert(ok,"AdaptiveREQ:FilterPilotWrite", ...
+            "Cannot publish mask scores: %s",msg);
+        fprintf("[RUN] %s mask scores saved; frozen cutoff %.6f.\n", ...
+            arms(a),release.cutoff);
+    end
+    clear release
+end
+
+%% Analysis: both arms must be saved before comparing and plotting.
+fprintf("[ANALYZE] Loading original SWS and saved mask scores for both arms ...\n");
+R=cell(1,2);
+Q=cell(1,2);
+for a=1:2
+    assert(isfile(estimateFiles(a)) && isfile(maskFiles(a)), ...
+        "AdaptiveREQ:FilterPilotMissingArtifact", ...
+        "Run the pilot before analysis; missing %s.",arms(a));
+    sr=load(estimateFiles(a),"result","inference_identity");
+    sm=load(maskFiles(a),"quality_result","mask_identity");
+    assert(isfield(sr,"result") && isfield(sr,"inference_identity") && ...
+        isfield(sm,"quality_result") && isfield(sm,"mask_identity"), ...
+        "AdaptiveREQ:FilterPilotSavedSchema","Incomplete pilot artifact.");
+    R{a}=sr.result;
+    Q{a}=sm.quality_result;
+end
+spec=adaptive_req_final_case_rois(CaseID);
+stamp=string(datetime("now","Format","yyyyMMdd_HHmmss_SSS"));
+out=fullfile(pilotRoot,"reports",stamp);
+assert(~isfolder(out),"AdaptiveREQ:FilterPilotReportCollision");
+report=analyze_full21_filter_cutoff_pair( ...
+    R,Q,spec,out, ...
+    ExploratoryCutoffs=ExploratoryCutoffs, ...
+    SaveFigures=SaveFigures,Visible=Visible);
+fprintf("[DONE] Frozen cutoff: %.6f; sensitivity cutoffs are NOT validated.\n", ...
+    report.frozen_cutoff);
+fprintf("[DONE] %s\n",report.retention_csv);
+fprintf("[DONE] %s\n",report.paired_csv);
+if report.feature_csv~="",fprintf("[DONE] %s\n",report.feature_csv);end
+fprintf("[DONE] Total elapsed %.1f s.\n",toc(clock));
+
+%% Local identity helper - no reads of massive binary model arrays
+function spec=localPilotFileIdentity(filename)
+    assert(isfile(filename), ...
+        "AdaptiveREQ:FilterPilotMissingFile","File missing: %s",filename);
+    s=dir(filename);
+    spec=struct("path",string(filename), ...
+        "bytes",double(s.bytes),"datenum",double(s.datenum));
+end
