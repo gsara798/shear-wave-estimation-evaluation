@@ -466,6 +466,114 @@ SWSEval, EWP, and earlier experimental ROI code in GitHub. It has **not**
 yet been run with the local MATLAB experimental MAT files. Pilot one
 case before producing the full set.
 
+## Controlled filter + cutoff pilot (2026-11-18)
+
+The previous QMV2 mask studies demonstrated that risk-score distributions
+and retained regions can change substantially after fixed-donut filtering.
+This pilot isolates filtering while retaining the exact **frozen
+unfiltered-trained Full21 quantile model** and **frozen Full21 quality
+classifier**. It is NOT evidence that filtered Full21 generalizes well:
+the trained regressors/classifier were developed for unfiltered fields.
+
+**Input (already processed, no IQ work):**
+
+```text
+/Users/sara/local/experimental-data-reorganized/2026-02-27/
+  2026Feb27_homo_5perc_rswe/processed/
+    qmv2_global_donut_0p8_8_v1/500Hz/wavefield_sample.mat
+```
+
+The script reads the neighboring `filter_manifest.mat`, checks that its
+filter is the **global complex FFT donut with nominal SWS band 0.8–8
+m/s**, and retrieves its EXACT original unfiltered
+`identity.source`. It then verifies source size/modification time,
+raw/filtered grid dimensions, physical sampling and frequency, and
+the filtered sample's provenance tag. If the source manifest is
+missing or the original input is no longer available, the pilot stops
+instead of pairing the filtered wavefield with an unrelated processed
+field. The original sample may be different from the
+`adaptive_req_final_unfiltered_v1` run used in the earlier campaign,
+so this pilot computes **both arms** to isolate the filter effect.
+
+Files:
+- `run_05_filter_cutoff_pilot.m` — plan/infer/score/analyze workflow
+- `analyze_full21_filter_cutoff_pair.m` — immutable threshold
+  sensitivity and physically paired statistics
+- `test_step_05_filter_cutoff_pilot.m` — synthetic fast unit checks
+
+### Pilot execution
+
+After pulling the repository and adding the project paths:
+
+```matlab
+runtests("studies/adaptive_req_final_experimental/test_step_05_filter_cutoff_pilot.m")
+```
+
+The runner defaults to `Mode="plan"` and the supplied 5% RSWE field at
+500 Hz. It prints both source paths, the filter provenance, the release
+availability, and any existing estimates/masks without loading any
+trained model or writing outputs.
+
+Once the plan confirms both sample files exist, edit:
+
+```matlab
+Mode="run";
+CaseID="2026Feb27_homo_5perc_rswe";
+FrequencyHz=500;
+M=2;
+StepPixels=3;
+ExploratoryCutoffs=[.20 .24 .30 .40];
+run("studies/adaptive_req_final_experimental/run_05_filter_cutoff_pilot.m")
+```
+
+The raw and filtered wavefields are independently inferred through
+`reqml.predictSWS` using the same frozen Full21 release. The same
+frozen quality classifier scores the 22 identical predictor *types*
+(including each arm's own Full21-predicted q). Input filters alone
+differ; **neither quantile model nor classifier is retrained**.
+
+Retained decisions are shown at the published frozen cutoff, plus
+exploratory 0.20, 0.24, 0.30 and 0.40 cutoffs. These exploration
+cutoffs do NOT change, replace, or validate the published operating
+specification. Since bagged-tree scores are uncalibrated, the former
+QMV2 cutoff of ~0.24 has no direct probabilistic interpretation for
+Full21. A higher cutoff increases coverage but does not establish
+higher SWS accuracy.
+
+All results are saved under a **new** location:
+
+```text
+<dataset>/analysis/adaptive_req_final_experimental_v1/
+  full21_filter_cutoff_pilot_v1/M2_step3/500Hz/
+    estimates/raw/reqml_result.mat
+    estimates/fixed_donut/reqml_result.mat
+    masks/raw/risk_mask_result.mat
+    masks/fixed_donut/risk_mask_result.mat
+    reports/<timestamp>/
+      mask_retention_cutoff_sweep.csv
+      paired_filter_effect.csv
+      paired_feature_shifts.csv
+      figures/
+        raw_vs_donut_frozen_mask_2x2.png
+        exploratory_cutoff_sweep.png
+        risk_distribution_raw_vs_donut.png
+        retention_vs_cutoff_by_roi.png
+```
+
+Use `Mode="analyze"` to recompute only figures and CSV from existing
+saved pilot maps without running either classifier or SWS estimator.
+Checkpoint identities refuse to silently overwrite previous model
+outputs, and repeat analysis writes a fresh timestamped report.
+
+Interpret the per-ROI raw/filtered **paired SWS change** and **risk
+score change** together with retention. Rejection remains a classifier
+prediction, *not measured experimental SWS error*. Inspect actual
+independent phantom reference values before claiming improvement.
+
+**Runtime status:** source and synthetic tests are committed to GitHub;
+the pilot has not been executed on the workstation's private MAT files.
+Run the plan and synthetic tests before the full inference step.
+
 ## Stage 05 — physical ROI statistics (planned)
 
 Analyze physical ROIs and plot SWS versus frequency for all M values
