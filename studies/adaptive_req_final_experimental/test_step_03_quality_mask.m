@@ -3,6 +3,16 @@ function tests=test_step_03_quality_mask
 tests=functiontests(localfunctions);
 end
 
+function setupOnce(testCase)
+% runtests may not have this study folder on the caller's MATLAB path.
+testCase.TestData.originalPath=path;
+addpath(fileparts(mfilename("fullpath")),"-begin");
+end
+
+function teardownOnce(testCase)
+path(testCase.TestData.originalPath);
+end
+
 function testMaskPartitionsOriginalValid(testCase)
 [R,L]=fixtures();
 Q=score_adaptive_req_full21_quality_mask(R,L);
@@ -17,6 +27,19 @@ verifyTrue(testCase,all(isfinite(Q.risk_score_map( ...
     Q.retained_mask | Q.rejected_mask)),"all"));
 verifyTrue(testCase,isnan(Q.risk_score_map(2,2)));
 verifyEqual(testCase,Q.q_map,R.q_map);
+end
+
+function testSyntheticRiskScoresAndFrozenThreshold(testCase)
+[R,L]=fixtures();
+Q=score_adaptive_req_full21_quality_mask(R,L);
+% Synthetic double reports q_map as the positive risk-class score.
+verifyEqual(testCase,Q.risk_score_map(1,1),.4,AbsTol=1e-12);
+verifyEqual(testCase,Q.risk_score_map(1,2),.6,AbsTol=1e-12);
+verifyEqual(testCase,Q.cutoff,.5);
+verifyEqual(testCase,Q.retained_count,1);
+verifyEqual(testCase,Q.rejected_count,1);
+verifyTrue(testCase,Q.retained_mask(1,1));
+verifyFalse(testCase,Q.retained_mask(1,2));
 end
 
 function testRun03MaskIdentityIsDefinedBeforeSave(testCase)
@@ -71,12 +94,10 @@ verifyError(testCase,@()score_adaptive_req_full21_quality_mask(R,L), ...
 end
 
 function [R,L]=fixtures()
-old=rng;
-cleanup=onCleanup(@()rng(old)); %#ok<NASGU>
-rng(405174,"twister");
-X=rand(32,22);
-y=double(X(:,1)+0.1*X(:,22)>0.6);
-classifier=fitctree(X,y,ClassNames=[0;1]);
+% No fitctree here: the actual classifier is not trained or loaded in
+% structural tests. The deterministic test double has the same ClassNames
+% and [label,scores]=predict(...) interface, without license checkout.
+classifier=MockAdaptiveReqFull21RiskClassifier();
 names="feature_"+compose("%02d",1:21);
 names=names(:);
 E=table([1;2;1;2],[1;1;2;2], ...
