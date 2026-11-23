@@ -82,6 +82,9 @@ meta.experimental_mask_applied=false;
 meta.experimental_feature_source="original_full21_saved_patches";
 meta.experimental_reextracted=false;
 
+% The mapping is already preserved in the IMMUTABLE original Full21
+% result, and duplicating it makes each new MAT unnecessarily large.
+E.req_mapping=[];
 out=struct("cs_map",cs,"q_map",qmap,"valid_mask",valid, ...
     "x_mm",original.x_mm,"z_mm",original.z_mm, ...
     "patch_examples",E,"patch_predictions",sws,"metadata",meta);
