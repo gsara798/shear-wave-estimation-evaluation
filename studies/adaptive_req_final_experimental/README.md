@@ -1,5 +1,8 @@
 # Adaptive REQ-ML — final experimental evaluation
 
+**New independent comparison:** [Full21 original vs Full21 clean vs legacy Q0 at 500 Hz](README_three_model_500hz.md). The new scripts call `reqml.predictSWS` for the two missing model estimates, use six February-27 acquisitions, preserve the original unfiltered Full21 estimates and never apply a quality mask.
+
+
 This directory contains the **new** experimental evaluation workflow for the
 frozen Adaptive REQ-ML Full21 estimator and quality mask, once publication
 of their bundles and the independent TEST equivalence check finishes. It is separate
